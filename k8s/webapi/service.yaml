@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orderpay-webapi
+  namespace: orderpay
+spec:
+  selector:
+    app: orderpay-webapi
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: LoadBalancer

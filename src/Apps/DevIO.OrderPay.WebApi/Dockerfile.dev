@@ -1,0 +1,26 @@
+# ============================================================
+# Development only — dotnet watch with hot reload
+# ============================================================
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+WORKDIR /src
+
+# copy solution files for restore
+COPY ["src/Apps/DevIO.OrderPay.WebApi/DevIO.OrderPay.WebApi.csproj",          "src/Apps/DevIO.OrderPay.WebApi/"]
+COPY ["src/Apps/DevIO.OrderPay.Core/DevIO.OrderPay.Core.csproj",              "src/Apps/DevIO.OrderPay.Core/"]
+COPY ["src/Apps/DevIO.OrderPay.Infra/DevIO.OrderPay.Infra.csproj",            "src/Apps/DevIO.OrderPay.Infra/"]
+COPY ["src/Contexts/DevIO.OrderPay.Customer/DevIO.OrderPay.Customer.csproj",  "src/Contexts/DevIO.OrderPay.Customer/"]
+COPY ["src/Contexts/DevIO.OrderPay.Customer.Application/DevIO.OrderPay.Customer.Application.csproj", "src/Contexts/DevIO.OrderPay.Customer.Application/"]
+
+# restore dependencies
+RUN dotnet restore "src/Apps/DevIO.OrderPay.WebApi/DevIO.OrderPay.WebApi.csproj"
+
+# copy full source (volume mount will override at runtime)
+COPY . .
+
+WORKDIR /src/src/Apps/DevIO.OrderPay.WebApi
+
+EXPOSE 8080
+
+# hot reload — rebuilds on any file change
+ENTRYPOINT ["dotnet", "watch", "run", "--no-launch-profile"]

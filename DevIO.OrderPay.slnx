@@ -1,0 +1,80 @@
+<Solution>
+  <Folder Name="/k8s/">
+    <File Path="k8s/KUBERNETES.md" />
+    <File Path="k8s/namespace.yaml" />
+    <File Path="k8s/secrets.yaml" />
+  </Folder>
+  <Folder Name="/k8s/keycloak/">
+    <File Path="k8s/keycloak/deployment.yaml" />
+    <File Path="k8s/keycloak/service.yaml" />
+    <File Path="k8s/keycloak/setup-job.yaml" />
+  </Folder>
+  <Folder Name="/k8s/postgres/">
+    <File Path="k8s/postgres/deployment.yaml" />
+    <File Path="k8s/postgres/service.yaml" />
+  </Folder>
+  <Folder Name="/k8s/seq/">
+    <File Path="k8s/seq/deployment.yaml" />
+    <File Path="k8s/seq/service.yaml" />
+  </Folder>
+  <Folder Name="/k8s/sqlserver/">
+    <File Path="k8s/sqlserver/deployment.yaml" />
+    <File Path="k8s/sqlserver/service.yaml" />
+  </Folder>
+  <Folder Name="/k8s/webapi/">
+    <File Path="k8s/webapi/deployment.yaml" />
+    <File Path="k8s/webapi/service.yaml" />
+  </Folder>
+  <Folder Name="/keycloak/">
+    <File Path="keycloak/realm-export.json" />
+    <File Path="keycloak/setup.sh" />
+  </Folder>
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/cd.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".env" />
+    <File Path="CLAUDE.md" />
+    <File Path="DEVOPS_COMMANDS.md" />
+    <File Path="DOCKER.md" />
+    <File Path="KUBERNETES.md" />
+    <File Path="entrypoint.sh" />
+    <File Path="env.example" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Apps/">
+    <File Path="src/Apps/DevIO.OrderPay.Core/CLAUDE.md" />
+    <File Path="src/Apps/DevIO.OrderPay.Infra/CLAUDE.md" />
+    <File Path="src/Apps/DevIO.OrderPay.WebApi/CLAUDE.md" />
+    <Project Path="src/Apps/DevIO.OrderPay.Core/DevIO.OrderPay.Core.csproj" Id="84e071c9-85c8-43b9-bd54-2d41e1ddb0ae" />
+    <Project Path="src/Apps/DevIO.OrderPay.Infra/DevIO.OrderPay.Infra.csproj" Id="d138f548-6135-4f58-ad96-5cef6b833761" />
+    <Project Path="src/Apps/DevIO.OrderPay.WebApi/DevIO.OrderPay.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/src/Contexts/" />
+  <Folder Name="/src/Contexts/Customer/">
+    <File Path="src/Contexts/DevIO.OrderPay.Customer/CLAUDE.md" />
+    <File Path="src/Contexts/DevIO.OrderPay.Customer.Application/CLAUDE.md" />
+    <Project Path="src/Contexts/DevIO.OrderPay.Customer.Application/DevIO.OrderPay.Customer.Application.csproj" Id="6bcc451e-d6ab-410c-a674-f09ef682123e" />
+    <Project Path="src/Contexts/DevIO.OrderPay.Customer/DevIO.OrderPay.Customer.csproj" />
+  </Folder>
+  <Folder Name="/src/Contexts/Order/">
+    <File Path="src/Contexts/DevIO.OrderPay.Order/CLAUDE.md" />
+    <File Path="src/Contexts/DevIO.OrderPay.Order.Application/CLAUDE.md" />
+    <Project Path="src/Contexts/DevIO.OrderPay.Order.Application/DevIO.OrderPay.Order.Application.csproj" Id="873c46f6-9508-4ecb-9862-c07c9e3bcb08" />
+    <Project Path="src/Contexts/DevIO.OrderPay.Order/DevIO.OrderPay.Order.csproj" Id="1bcce006-89d7-4c6c-b877-cdb435d68346" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DevIO.OrderPay.Tests/DevIO.OrderPay.Tests.csproj" Id="5294e2f1-a803-4ff7-9352-b567985709ae" />
+  </Folder>
+  <Folder Name="/tests/docs/">
+    <File Path="tests/docs/TESTING.md" />
+  </Folder>
+  <ItemGroup>
+    <Watch Remove="**/bin/**" />
+    <Watch Remove="**/obj/**" />
+  </ItemGroup>
+  <Project Path="docker-compose.dcproj">
+    <Build Solution="Release|*" />
+  </Project>
+</Solution>

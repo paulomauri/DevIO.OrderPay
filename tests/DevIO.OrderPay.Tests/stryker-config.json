@@ -1,0 +1,15 @@
+{
+  "stryker-config": {
+    "project": "DevIO.OrderPay.Order.Application.csproj",
+    "test-projects": [
+      "tests/DevIO.OrderPay.Tests/DevIO.OrderPay.Tests.csproj"
+    ],
+    "reporters": [ "html", "json", "progress" ],
+    "mutation-level": "Standard",
+    "thresholds": {
+      "high": 80,
+      "low": 60,
+      "break": 0
+    }
+  }
+}

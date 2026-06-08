@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: seq
+  namespace: orderpay
+spec:
+  selector:
+    app: seq
+  ports:
+    - name: ui
+      port: 8082
+      targetPort: 80
+    - name: ingest
+      port: 5341
+      targetPort: 5341
+  type: LoadBalancer

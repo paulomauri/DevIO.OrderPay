@@ -1,0 +1,323 @@
+# DevIO.OrderPay — Kubernetes Deployment Guide
+
+## Prerequisites
+
+- Docker Desktop with Minikube installed
+- kubectl CLI
+- Images pushed to Docker Hub
+- WSL2 (Ubuntu 24.04)
+
+---
+
+## Project Structure
+
+```
+k8s/
+├── namespace.yaml
+├── secrets.yaml
+├── sqlserver/
+│   ├── deployment.yaml
+│   └── service.yaml
+├── webapi/
+│   ├── deployment.yaml
+│   └── service.yaml
+└── seq/
+    ├── deployment.yaml
+    └── service.yaml
+```
+
+---
+
+## Phase 1 — Docker Hub
+
+### 1. Login to Docker Hub
+
+```bash
+docker login
+# Username: paulomauri
+# Password: ********
+```
+
+### 2. Build and tag WebApi image
+
+```bash
+cd /mnt/c/projetos-estudo/DevIO.OrderPay
+
+docker build \
+    -t paulomauri/orderpay-webapi:1.0.0 \
+    -t paulomauri/orderpay-webapi:latest \
+    -f src/Apps/DevIO.OrderPay.WebApi/Dockerfile \
+    .
+```
+
+### 3. Or retag existing image
+
+```bash
+docker tag devioorderpaywebapi paulomauri/orderpay-webapi:1.0.0
+docker tag devioorderpaywebapi paulomauri/orderpay-webapi:latest
+```
+
+### 4. Push to Docker Hub
+
+```bash
+docker push paulomauri/orderpay-webapi:1.0.0
+docker push paulomauri/orderpay-webapi:latest
+```
+
+### 5. Verify on Docker Hub
+
+```bash
+docker search paulomauri
+```
+
+Or visit: `https://hub.docker.com/u/paulomauri`
+
+---
+
+## Phase 2 — Kubernetes Setup
+
+### 1. Start Minikube
+
+```bash
+minikube start
+minikube status
+```
+
+Expected output:
+```
+minikube
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+```
+
+### 2. Enable Minikube addons
+
+```bash
+minikube addons enable ingress
+minikube addons enable metrics-server
+```
+
+### 3. Create namespace
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl config set-context --current --namespace=orderpay
+```
+
+### 4. Apply secrets
+
+```bash
+kubectl apply -f k8s/secrets.yaml
+```
+
+Verify:
+```bash
+kubectl get secrets -n orderpay
+```
+
+---
+
+## Phase 3 — Deploy Services
+
+### 1. Deploy SQL Server
+
+```bash
+kubectl apply -f k8s/sqlserver/
+```
+
+Wait for SQL Server to be ready:
+```bash
+kubectl get pods -n orderpay -w
+# wait until STATUS = Running
+```
+
+### 2. Deploy Seq
+
+```bash
+kubectl apply -f k8s/seq/
+```
+
+### 3. Deploy WebApi
+
+```bash
+kubectl apply -f k8s/webapi/
+```
+
+### 4. Verify everything is running
+
+```bash
+kubectl get all -n orderpay
+```
+
+Expected output:
+```
+NAME                                   READY   STATUS    RESTARTS
+pod/orderpay-webapi-xxx                1/1     Running   0
+pod/orderpay-webapi-yyy                1/1     Running   0
+pod/sqlserver-xxx                      1/1     Running   0
+pod/seq-xxx                            1/1     Running   0
+
+NAME                      TYPE           CLUSTER-IP     EXTERNAL-IP
+service/orderpay-webapi   LoadBalancer   10.96.x.x      <pending>
+service/sqlserver         ClusterIP      10.96.x.x      <none>
+service/seq               LoadBalancer   10.96.x.x      <pending>
+```
+
+---
+
+## Phase 4 — Access Services
+
+### 1. Expose WebApi via Minikube
+
+```bash
+minikube service orderpay-webapi -n orderpay --url
+```
+
+Or use tunnel (keeps LoadBalancer running):
+```bash
+minikube tunnel
+```
+
+Then access:
+```
+http://127.0.0.1:80/swagger
+```
+
+### 2. Expose Seq UI
+
+```bash
+minikube service seq -n orderpay --url
+```
+
+Then access:
+```
+http://127.0.0.1:8082    ← Seq UI
+```
+
+### 3. Port-forward (alternative)
+
+```bash
+# WebApi
+kubectl port-forward svc/orderpay-webapi 8080:80 -n orderpay
+
+# Seq UI
+kubectl port-forward svc/seq 8082:8082 -n orderpay
+
+# SQL Server
+kubectl port-forward svc/sqlserver 1433:1433 -n orderpay
+```
+
+---
+
+## Useful kubectl Commands
+
+### Check pod logs
+
+```bash
+# webapi logs
+kubectl logs -f deployment/orderpay-webapi -n orderpay
+
+# sqlserver logs
+kubectl logs -f deployment/sqlserver -n orderpay
+
+# seq logs
+kubectl logs -f deployment/seq -n orderpay
+```
+
+### Describe pod (debug issues)
+
+```bash
+kubectl describe pod <pod-name> -n orderpay
+```
+
+### Scale WebApi replicas
+
+```bash
+# scale up
+kubectl scale deployment orderpay-webapi --replicas=3 -n orderpay
+
+# scale down
+kubectl scale deployment orderpay-webapi --replicas=1 -n orderpay
+```
+
+### Update image (rolling update)
+
+```bash
+# build and push new version
+docker build -t paulomauri/orderpay-webapi:1.0.1 -f src/Apps/DevIO.OrderPay.WebApi/Dockerfile .
+docker push paulomauri/orderpay-webapi:1.0.1
+
+# update deployment
+kubectl set image deployment/orderpay-webapi \
+    orderpay-webapi=paulomauri/orderpay-webapi:1.0.1 \
+    -n orderpay
+
+# watch rollout
+kubectl rollout status deployment/orderpay-webapi -n orderpay
+```
+
+### Rollback deployment
+
+```bash
+kubectl rollout undo deployment/orderpay-webapi -n orderpay
+```
+
+### Get events (debug crashes)
+
+```bash
+kubectl get events -n orderpay --sort-by='.lastTimestamp'
+```
+
+---
+
+## Teardown
+
+### Stop without deleting
+
+```bash
+minikube stop
+```
+
+### Delete all resources
+
+```bash
+kubectl delete namespace orderpay
+```
+
+### Delete Minikube cluster
+
+```bash
+minikube delete
+```
+
+---
+
+## Architecture Overview
+
+```
+Internet
+    ↓
+LoadBalancer (minikube tunnel)
+    ↓
+Service: orderpay-webapi (port 80)
+    ↓
+Pod: orderpay-webapi (x2 replicas, port 8080)
+    ├── → Service: sqlserver (port 1433) → Pod: sqlserver
+    └── → Service: seq (port 5341)       → Pod: seq
+```
+
+---
+
+## Important Notes
+
+| Topic | Detail |
+|---|---|
+| SQL Server image | Uses official `mcr.microsoft.com/mssql/server:2022-latest` |
+| WebApi image | `paulomauri/orderpay-webapi:latest` from Docker Hub |
+| Secrets | Never commit `secrets.yaml` with real passwords to git |
+| Replicas | WebApi runs 2 replicas for high availability |
+| Storage | SQL Server and Seq use PersistentVolumeClaims |
+| Production | Use managed DB (Azure SQL / AWS RDS) instead of SQL Server in k8s |

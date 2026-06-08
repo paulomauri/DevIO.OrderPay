@@ -1,0 +1,197 @@
+services:
+  # ----------------------------------------------------------
+  # DevIO.OrderPay.WebAPI
+  # ----------------------------------------------------------
+  devio.orderpay.webapi:
+    image: ${DOCKER_REGISTRY-}devioorderpaywebapi
+    build:
+      context: .
+      dockerfile: src/Apps/DevIO.OrderPay.WebApi/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080        # ← forces HTTP only, no HTTPS
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=OrderPayDb;User Id=sa;Password=Mauri@22;TrustServerCertificate=True;
+      - Keycloak__Authority=http://localhost:8085/realms/orderpay
+      - Keycloak__Audience=orderpay-webapi
+      - Keycloak__MetadataAddress=http://keycloak:8085/realms/orderpay/.well-known/openid-configuration
+      - Keycloak__ValidIssuer=http://localhost:8085/realms/orderpay
+      - Keycloak__RequireHttpsMetadata=false
+    depends_on:                          
+      sqlserver:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:                           
+      - app_network
+
+  # ----------------------------------------------------------
+  # SQL Server 2025 Developer Edition
+  # ----------------------------------------------------------
+  sqlserver:
+    build:
+      context: .
+      dockerfile: Dockerfile           # solution root
+    container_name: sqlserver2025
+    hostname: sqlserver
+    restart: unless-stopped
+ 
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      # ⚠  Override SA password via .env file or CI secret manager
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Mauri@22}"
+      MSSQL_COLLATION: "SQL_Latin1_General_CP1_CI_AS"
+      MSSQL_AGENT_ENABLED: "true"
+      MSSQL_TCP_PORT: "1433"
+ 
+    ports:
+      # HOST_PORT:CONTAINER_PORT
+      # Change host port if 1433 is already in use on your machine
+      - "${SQL_HOST_PORT:-1433}:1433"
+ 
+    volumes:
+      # Named volumes keep data between container restarts
+      - sqlserver_data:/var/opt/mssql/data
+      - sqlserver_log:/var/opt/mssql/log
+      - sqlserver_backup:/var/opt/mssql/backup
+ 
+    networks:
+      - app_network
+ 
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA \
+          -P "$$MSSQL_SA_PASSWORD" -No -Q "SELECT 1" || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ----------------------------------------------------------
+  # PostgreSQL — Keycloak database
+  # ----------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       keycloak
+      POSTGRES_USER:     keycloak
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-Mauri@22}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------
+  # Keycloak — Authentication server
+  # ----------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    restart: unless-stopped
+    command:
+        - start-dev
+        - --import-realm
+        - --health-enabled=true
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: "${POSTGRES_PASSWORD:-Mauri@22}"
+
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8085
+      KC_HTTP_PORT: 8085
+
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-Mauri@22}"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import   # ← imports realm on startup
+    ports:
+      - "8085:8085"     # => HOST:8085 -> CONTAINER:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c '</dev/tcp/localhost/9000'"
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ----------------------------------------------------------
+  # Keycloak Setup — runs once after keycloak is healthy
+  # ----------------------------------------------------------
+  keycloak-setup:
+    image: alpine:latest
+    container_name: keycloak-setup
+    restart: "no"                        # ← runs once and exits
+    volumes:
+      - ./keycloak:/scripts
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl jq &&
+        chmod +x /scripts/setup.sh &&
+        /scripts/setup.sh
+    depends_on:
+      keycloak:
+        condition: service_healthy       # ← waits for keycloak healthy
+    networks:
+      - app_network
+
+  # ----------------------------------------------------------
+  # Seq (Log)
+  # ----------------------------------------------------------
+  seq:
+    image: datalust/seq:latest
+    container_name: seq
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: "${SEQ_ADMIN_PASSWORD:-Mauri@22}"
+    ports:
+      - "5341:5341"   # ← ingest (Serilog + OTel send here)
+      - "8082:80"     # ← UI → http://localhost:8081
+    volumes:
+      - seq_data:/data
+    networks:
+      - app_network
+
+# ----------------------------------------------------------
+# Named volumes — data survives container restarts
+# ----------------------------------------------------------
+volumes:
+  sqlserver_data:
+  sqlserver_log:
+  sqlserver_backup:
+  postgres_data: 
+  seq_data: 
+ 
+# ----------------------------------------------------------
+# Shared network
+# ----------------------------------------------------------
+networks:
+  app_network:
+    driver: bridge
