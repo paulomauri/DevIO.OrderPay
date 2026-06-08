@@ -21,14 +21,14 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore DevIO.OrderPay.slnx
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build DevIO.OrderPay.slnx --no-restore --configuration Release
 
       - name: Run tests
         run: |
-          dotnet test \
+          dotnet test tests/DevIO.OrderPay.Tests/DevIO.OrderPay.Tests.csproj \
             --no-build \
             --configuration Release \
             --logger "trx;LogFileName=test-results.trx" \
