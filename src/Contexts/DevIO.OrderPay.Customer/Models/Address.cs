@@ -1,7 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace DevIO.OrderPay.Customer.Models;
 
 public class Address

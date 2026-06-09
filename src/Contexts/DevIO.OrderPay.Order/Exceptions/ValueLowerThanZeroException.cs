@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DevIO.OrderPay.Order.Exceptions;
-public class ValueLowerThanZeroException : Exception
+﻿namespace DevIO.OrderPay.Order.Exceptions;
+public class ValueLowerThanZeroException(decimal value) : Exception($"Value {value} should be greater than or equal zero.")
 {
-    public ValueLowerThanZeroException(decimal value) 
-        : base($"Value {value} should be greater than or equal zero.")
-    { }
 }

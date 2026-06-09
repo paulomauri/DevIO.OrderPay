@@ -4,39 +4,33 @@ using DevIO.OrderPay.Order.Models;
 
 namespace DevIO.OrderPay.Order.Application.Services;
 
-public class OrderService : IOrderService
+public class OrderService(IOrderRepository repository) : IOrderService
 {
-    private readonly IOrderRepository _repository;
-
-    public OrderService(IOrderRepository repository)
-    {
-        _repository = repository;
-    }
+    private readonly IOrderRepository _repository = repository;
 
     public async Task<IEnumerable<OrderResponse>> GetAllAsync()
     {
-        var orders = await _repository.GetAllAsync();
-        return orders.Select(MapToResponse).ToList();
+        IEnumerable<Models.Order> orders = await _repository.GetAllAsync();
+        return [.. orders.Select(MapToResponse)];
     }
 
     public async Task<OrderResponse?> GetByIdAsync(Guid id)
     {
-        var order = await _repository.GetByIdAsync(id);
+        Models.Order? order = await _repository.GetByIdAsync(id);
         return order is null ? null : MapToResponse(order);
     }
 
     public async Task<IEnumerable<OrderResponse>> GetByCustomerIdAsync(Guid customerId)
     {
-        var orders = await _repository.GetByCustomerIdAsync(customerId);
-        return orders.Select(MapToResponse).ToList();
+        IEnumerable<Models.Order> orders = await _repository.GetByCustomerIdAsync(customerId);
+        return [.. orders.Select(MapToResponse)];
     }
 
     public async Task<OrderResponse> AddAsync(OrderRequest request)
     {
-        var order = new Models.Order(request.CustomerId);
-        order.Details = request.Details;
+        var order = new Models.Order(request.CustomerId) { Details = request.Details };
 
-        foreach (var item in request.Items)
+        foreach (OrderItemRequest item in request.Items)
             order.AddItem(item.ProductId, item.Quantity, item.Price, item.Discount);
 
         order.TotalPrice = new Price(order.Items.Sum(i => i.Price.Value * i.Quantity));
@@ -52,7 +46,7 @@ public class OrderService : IOrderService
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var order = await _repository.GetByIdAsync(id);
+        Models.Order? order = await _repository.GetByIdAsync(id);
         if (order is null) return false;
 
         await _repository.DeleteAsync(id);
@@ -63,7 +57,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponse?> UpdateStatusAsync(Guid id, OrderStatus status)
     {
-        var order = await _repository.GetByIdAsync(id);
+        Models.Order? order = await _repository.GetByIdAsync(id);
         if (order is null) return null;
 
         await _repository.UpdateStatusAsync(id, status);
@@ -77,7 +71,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponse?> UpdateDeliveryDateAsync(Guid id, DateTime deliveryDate)
     {
-        var order = await _repository.GetByIdAsync(id);
+        Models.Order? order = await _repository.GetByIdAsync(id);
         if (order is null) return null;
 
         await _repository.UpdateDeliveryDateAsync(id, deliveryDate);
@@ -91,11 +85,11 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponse?> AddItemAsync(Guid orderId, OrderItemRequest item)
     {
-        var order = await _repository.GetByIdAsync(orderId);
+        Models.Order? order = await _repository.GetByIdAsync(orderId);
         if (order is null) return null;
 
         order.AddItem(item.ProductId, item.Quantity, item.Price, item.Discount);
-        var addedItem = order.Items.Last();
+        OrderItem addedItem = order.Items.Last();
         await _repository.AddOrderItemAsync(addedItem);
 
         order.TotalPrice = new Price(order.Items.Sum(i => (i.Price?.Value ?? 0m) * i.Quantity));
@@ -109,10 +103,10 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponse?> RemoveItemAsync(Guid orderId, Guid itemId)
     {
-        var order = await _repository.GetByIdAsync(orderId);
+        Models.Order? order = await _repository.GetByIdAsync(orderId);
         if (order is null) return null;
 
-        var item = order.Items.FirstOrDefault(i => i.Id == itemId);
+        OrderItem? item = order.Items.FirstOrDefault(i => i.Id == itemId);
         if (item is null) return null;
 
         order.RemoveItem(item);

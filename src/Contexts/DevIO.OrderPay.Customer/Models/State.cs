@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
+﻿using System.ComponentModel;
 
 namespace DevIO.OrderPay.Customer.Models;
 
@@ -11,7 +8,7 @@ public static class UfStringConverter
     {
         if (uf is null) return null;
         return Enum
-            .TryParse<State>(uf, out var parsedUf) ? parsedUf : null;
+            .TryParse<State>(uf, out State parsedUf) ? parsedUf : null;
     }
 
     public static string ToStringValue(this State? uf)

@@ -15,7 +15,7 @@ public class PollyResilienceTests
     [Fact]
     public async Task Retry_OnHttpRequestException_CallsHandlerOncePerAttempt()
     {
-        var callCount = 0;
+        int callCount = 0;
         var pipeline  = BuildRetryOnly(maxRetryAttempts: 2);
 
         var act = async () => await pipeline.ExecuteAsync(ct =>
@@ -34,7 +34,7 @@ public class PollyResilienceTests
     [Fact]
     public async Task Retry_On5xxResponse_CallsHandlerOncePerAttempt()
     {
-        var callCount = 0;
+        int callCount = 0;
         var pipeline  = BuildRetryOnly(maxRetryAttempts: 2);
 
         await pipeline.ExecuteAsync(ct =>
@@ -50,7 +50,7 @@ public class PollyResilienceTests
     [Fact]
     public async Task Retry_OnSuccess_ExecutesOnce()
     {
-        var callCount = 0;
+        int callCount = 0;
         var pipeline  = BuildRetryOnly(maxRetryAttempts: 3);
 
         var result = await pipeline.ExecuteAsync(ct =>
@@ -67,7 +67,7 @@ public class PollyResilienceTests
     [Fact]
     public async Task Retry_SucceedsOnSecondAttempt_StopsRetrying()
     {
-        var callCount = 0;
+        int callCount = 0;
         var pipeline  = BuildRetryOnly(maxRetryAttempts: 3);
 
         var result = await pipeline.ExecuteAsync(ct =>
@@ -86,7 +86,7 @@ public class PollyResilienceTests
     [Fact]
     public async Task Retry_On4xxResponse_DoesNotRetry()
     {
-        var callCount = 0;
+        int callCount = 0;
         var pipeline  = BuildRetryOnly(maxRetryAttempts: 3);
 
         var result = await pipeline.ExecuteAsync(ct =>
@@ -108,7 +108,7 @@ public class PollyResilienceTests
         var pipeline = BuildCircuitBreakerOnly(minimumThroughput: 3, failureRatio: 0.5);
 
         // Fire 4 failures — 100% failure rate, exceeds both threshold and ratio
-        for (var i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             try
             {
@@ -130,11 +130,11 @@ public class PollyResilienceTests
     [Fact]
     public async Task CircuitBreaker_WhenOpen_RejectsWithoutCallingInnerHandler()
     {
-        var callCount = 0;
+        int callCount = 0;
         var pipeline  = BuildCircuitBreakerOnly(minimumThroughput: 3, failureRatio: 0.5);
 
         // Trip the circuit
-        for (var i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             try
             {

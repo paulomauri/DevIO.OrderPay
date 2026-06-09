@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace DevIO.OrderPay.Customer.Models;
 
-public class Email
+public partial class Email
 {
-    private static readonly Regex EmailRegex = new Regex(
-    @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-    RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex _emailRegex = EmailRegex();
 
     public Email(string value)
     {
         // validação
-        if (!EmailRegex.IsMatch(value))
+        if (!_emailRegex.IsMatch(value))
         {
             throw new ArgumentException("E-mail inválido.");
         }
@@ -23,4 +18,7 @@ public class Email
     }
 
     public string Value { get; }
+
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "pt-BR")]
+    private static partial Regex EmailRegex();
 }

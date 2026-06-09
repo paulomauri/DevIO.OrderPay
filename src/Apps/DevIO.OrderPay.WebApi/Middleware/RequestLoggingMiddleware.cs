@@ -3,24 +3,17 @@ using System.Diagnostics;
 
 namespace DevIO.OrderPay.WebApi.Middleware;
 
-public class RequestLoggingMiddleware
+public class RequestLoggingMiddleware(
+    RequestDelegate next,
+    ILogger<RequestLoggingMiddleware> logger)
 {
     private const string CorrelationIdHeader = "X-Correlation-Id";
-    private readonly RequestDelegate _next;
-    private readonly ILogger<RequestLoggingMiddleware> _logger;
-
-    public RequestLoggingMiddleware(
-        RequestDelegate next,
-        ILogger<RequestLoggingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
+    private readonly RequestDelegate _next = next;
+    private readonly ILogger<RequestLoggingMiddleware> _logger = logger;
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var correlationId = context.Response.Headers[CorrelationIdHeader].ToString();
+        string correlationId = context.Response.Headers[CorrelationIdHeader].ToString();
         var sw = Stopwatch.StartNew();
 
         try

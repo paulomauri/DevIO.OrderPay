@@ -1,7 +1,5 @@
 namespace DevIO.OrderPay.Customer.Exceptions;
 
-public class DuplicateCpfException : Exception
+public class DuplicateCpfException(string cpf) : Exception($"CPF '{cpf}' is already registered.")
 {
-    public DuplicateCpfException(string cpf)
-        : base($"CPF '{cpf}' is already registered.") { }
 }

@@ -3,19 +3,14 @@ using Serilog.Context;
 
 namespace DevIO.OrderPay.WebApi.Middleware;
 
-public class CorrelationIdMiddleware
+public class CorrelationIdMiddleware(RequestDelegate next)
 {
     private const string CorrelationIdHeader = "X-Correlation-Id";
-    private readonly RequestDelegate _next;
-
-    public CorrelationIdMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
+    private readonly RequestDelegate _next = next;
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var correlationId = GetOrGenerateCorrelationId(context);
+        string correlationId = GetOrGenerateCorrelationId(context);
 
         // add to response headers so client can trace it
         context.Response.Headers[CorrelationIdHeader] = correlationId;

@@ -97,7 +97,7 @@ public class ProductServiceTests
         _repoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
                  .ReturnsAsync((Product?)null);
 
-        var result = await _sut.DeleteAsync(Guid.NewGuid());
+        bool result = await _sut.DeleteAsync(Guid.NewGuid());
 
         result.Should().BeFalse();
     }
@@ -108,7 +108,7 @@ public class ProductServiceTests
         var product = BuildProduct();
         _repoMock.Setup(r => r.GetByIdAsync(product.Id)).ReturnsAsync(product);
 
-        var result = await _sut.DeleteAsync(product.Id);
+        bool result = await _sut.DeleteAsync(product.Id);
 
         result.Should().BeTrue();
         _repoMock.Verify(r => r.DeleteAsync(product.Id), Times.Once);
