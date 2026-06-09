@@ -61,7 +61,7 @@ public class OrderControllerIntegrationTests(OrderPayWebApplicationFactory facto
     {
         var client = _factory.CreateClientWithRoles("customer");
 
-        var response = await client.PatchAsJsonAsync($"{BaseUrl}/{Guid.NewGuid()}/status", "Confirmed");
+        var response = await client.PatchAsJsonAsync($"{BaseUrl}/{Guid.NewGuid()}/status", "PaymentConfirmed");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -213,7 +213,7 @@ public class OrderControllerIntegrationTests(OrderPayWebApplicationFactory facto
         var created = await CreateOrderAsync(client);
 
         var response = await client.PatchAsJsonAsync(
-            $"{BaseUrl}/{created!.Id}/status", "Confirmed");
+            $"{BaseUrl}/{created!.Id}/status", "PaymentConfirmed");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

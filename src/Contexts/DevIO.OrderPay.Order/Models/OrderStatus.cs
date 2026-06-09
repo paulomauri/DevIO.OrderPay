@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Text;
 
 namespace DevIO.OrderPay.Order.Models;
 
@@ -10,36 +7,51 @@ public static class OrderStatusConverter
     public static OrderStatus? From(string? status)
     {
         if (status is null) return null;
-        return Enum
-            .TryParse<OrderStatus>(status, out var parsedStatus) ? parsedStatus : null;
+        return Enum.TryParse<OrderStatus>(status, out OrderStatus parsedStatus) ? parsedStatus : null;
     }
 
-    public static string ToStringValue(this OrderStatus? status)
-    {
-        return status switch
+    public static string ToStringValue(this OrderStatus? status) =>
+        status switch
         {
-            OrderStatus.Pending => "Pending",
-            OrderStatus.Confirmed => "Confirmed",
-            OrderStatus.Cancelled => "Cancelled",
-            OrderStatus.Shipped => "Shipped",
-            OrderStatus.InRoute => "InRoute",
-            OrderStatus.Delivered => "Delivered",
-            _ => status?.ToString() ?? ""
+            OrderStatus.Pending                => "Pending",
+            OrderStatus.AwaitingPayment        => "AwaitingPayment",
+            OrderStatus.PaymentConfirmed       => "PaymentConfirmed",
+            OrderStatus.Processing             => "Processing",
+            OrderStatus.Shipped                => "Shipped",
+            OrderStatus.Delivered              => "Delivered",
+            OrderStatus.CancellationRequested  => "CancellationRequested",
+            OrderStatus.Refunding              => "Refunding",
+            OrderStatus.Cancelled              => "Cancelled",
+            _                                  => status?.ToString() ?? ""
         };
-    }
 }
+
 public enum OrderStatus
 {
     [Description("Pending")]
     Pending,
-    [Description("Confirmed")]
-    Confirmed,
-    [Description("Cancelled")]
-    Cancelled,
+
+    [Description("Awaiting Payment")]
+    AwaitingPayment,
+
+    [Description("Payment Confirmed")]
+    PaymentConfirmed,
+
+    [Description("Processing")]
+    Processing,
+
     [Description("Shipped")]
     Shipped,
-    [Description("In Route")]
-    InRoute,
+
     [Description("Delivered")]
-    Delivered
+    Delivered,
+
+    [Description("Cancellation Requested")]
+    CancellationRequested,
+
+    [Description("Refunding")]
+    Refunding,
+
+    [Description("Cancelled")]
+    Cancelled
 }

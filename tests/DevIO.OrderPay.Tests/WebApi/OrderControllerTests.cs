@@ -112,10 +112,10 @@ public class OrderControllerTests
     public async Task UpdateStatus_ValidStatus_Returns200()
     {
         var response = BuildResponse();
-        _serviceMock.Setup(s => s.UpdateStatusAsync(response.Id, OrderStatus.Confirmed))
+        _serviceMock.Setup(s => s.UpdateStatusAsync(response.Id, OrderStatus.PaymentConfirmed))
                     .ReturnsAsync(response);
 
-        var result = await _sut.UpdateStatus(response.Id, "Confirmed");
+        var result = await _sut.UpdateStatus(response.Id, "PaymentConfirmed");
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -134,7 +134,7 @@ public class OrderControllerTests
         _serviceMock.Setup(s => s.UpdateStatusAsync(It.IsAny<Guid>(), It.IsAny<OrderStatus>()))
                     .ReturnsAsync((OrderResponse?)null);
 
-        var result = await _sut.UpdateStatus(Guid.NewGuid(), "Confirmed");
+        var result = await _sut.UpdateStatus(Guid.NewGuid(), "PaymentConfirmed");
 
         result.Should().BeOfType<NotFoundResult>();
     }

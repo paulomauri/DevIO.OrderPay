@@ -147,4 +147,48 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
+| 7 — Payment Bounded Context | pending |
+| 8 — Order State Machine + Domain Events + Outbox | pending |
 | 6 — Frontend | optional |
+
+## Phase 7 — Payment Bounded Context (pending)
+
+New bounded context `DevIO.OrderPay.Payment` with its own domain, application, and infra layers.
+
+**Domain**
+- `Payment` aggregate — `PaymentStatus` state machine: `Pending → Processing → Authorized → Captured → Refunded / Failed`
+- `PaymentMethod` value object — card brand, last 4 digits, expiry
+- `Amount` value object
+- `PaymentAttempt` entity — holds `IdempotencyKey` (composite: `orderId:attemptNumber`), persisted before gateway call
+- `InvalidPaymentTransitionException`, `DuplicatePaymentAttemptException`
+
+**Application**
+- `PaymentService` — calls `IPaymentGateway` with the idempotency key; on retry, finds existing `PaymentAttempt` by key and skips the charge
+- `IPaymentGateway` — abstraction over Stripe/mock; adapter receives the key and returns cached result if already processed
+- Raises `PaymentCapturedEvent` on success
+
+**Integration**
+- `OrderService` reacts to `PaymentCapturedEvent` → advances `OrderStatus` from `AwaitingPayment → PaymentConfirmed`
+
+**Idempotency guarantee:** payment is charged at-most-once — retrying a failed call with the same key never double-charges.
+
+## Phase 8 — Order State Machine + Domain Events + Outbox (pending)
+
+**State machine**
+- `Order.UpdateStatus(newStatus)` validates the transition against an allowed-transitions map
+- Throws `InvalidOrderTransitionException` for illegal moves (e.g. `Pending → Delivered`)
+
+**Domain events**
+- `Order` accumulates `IDomainEvent` instances in a `List<IDomainEvent>`
+- Events: `PaymentConfirmedEvent`, `OrderShippedEvent`, `OrderCancelledEvent`
+- Application layer dispatches them after `SaveChanges`
+
+**Outbox pattern**
+- `OutboxMessage` table — written atomically in the same EF Core transaction as the aggregate save; each message has a stable GUID `Id`
+- `ProcessedOutboxMessage` table — stores consumed message IDs
+- `OutboxWorker` (`IHostedService`) — polls, checks `ProcessedOutboxMessage` before dispatching; if already present, skips; marks done after success
+- Dispatcher uses MediatR
+
+**Idempotency guarantee:** every downstream side effect runs at-least-once but is safe to repeat — dedup by `OutboxMessage.Id` against `ProcessedOutboxMessage`.
+
+**End-to-end guarantee:** Phase 7 (at-most-once charge) + Phase 8 (at-least-once + idempotent consumers) = effectively-once semantics across the payment and order pipeline.

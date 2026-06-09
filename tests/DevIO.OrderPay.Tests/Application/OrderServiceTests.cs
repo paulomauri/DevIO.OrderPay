@@ -138,7 +138,7 @@ public class OrderServiceTests
         _repoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
                  .ReturnsAsync((Order.Models.Order?)null);
 
-        var result = await _sut.UpdateStatusAsync(Guid.NewGuid(), OrderStatus.Confirmed);
+        var result = await _sut.UpdateStatusAsync(Guid.NewGuid(), OrderStatus.PaymentConfirmed);
 
         result.Should().BeNull();
     }
@@ -148,14 +148,14 @@ public class OrderServiceTests
     {
         var order = BuildOrder();
         _repoMock.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
-        _repoMock.Setup(r => r.UpdateStatusAsync(order.Id, OrderStatus.Confirmed))
+        _repoMock.Setup(r => r.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed))
                  .ReturnsAsync(true);
 
-        var result = await _sut.UpdateStatusAsync(order.Id, OrderStatus.Confirmed);
+        var result = await _sut.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed);
 
         result.Should().NotBeNull();
-        result!.Status.Should().Be("Confirmed");
-        _repoMock.Verify(r => r.UpdateStatusAsync(order.Id, OrderStatus.Confirmed), Times.Once);
+        result!.Status.Should().Be("PaymentConfirmed");
+        _repoMock.Verify(r => r.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed), Times.Once);
         _repoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
