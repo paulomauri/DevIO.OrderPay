@@ -1,4 +1,5 @@
 using DevIO.OrderPay.Infra;
+using DevIO.OrderPay.WebApi.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -14,6 +15,7 @@ public class OrderPayWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
+            services.PostConfigure<RateLimiterSettings>(o => o.Enabled = false);
             // Remove DbContextOptions<AppDbContext>
             var optionsDesc = services.SingleOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));

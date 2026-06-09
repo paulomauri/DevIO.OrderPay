@@ -1,8 +1,10 @@
 using Asp.Versioning;
 using DevIO.OrderPay.Order.Application.DTOs;
 using DevIO.OrderPay.Order.Application.Services;
+using DevIO.OrderPay.WebApi.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DevIO.OrderPay.WebApi.Controllers;
 
@@ -10,6 +12,7 @@ namespace DevIO.OrderPay.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.GeneralPolicy)]
 public class ProductController(IProductService service) : ControllerBase
 {
     private readonly IProductService _service = service;
@@ -35,6 +38,7 @@ public class ProductController(IProductService service) : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Post([FromBody] ProductRequest request)
@@ -48,6 +52,7 @@ public class ProductController(IProductService service) : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,6 +67,7 @@ public class ProductController(IProductService service) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
@@ -72,6 +78,7 @@ public class ProductController(IProductService service) : ControllerBase
 
     [HttpPatch("{id:guid}/sku")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSku(Guid id, [FromBody] string sku)

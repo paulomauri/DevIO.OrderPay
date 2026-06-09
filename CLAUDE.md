@@ -4,7 +4,7 @@ Study project — .NET 10 Clean Architecture API exploring DevIO patterns with o
 
 ## Stack
 
-- **API:** ASP.NET Core 10, EF Core (SQL Server), FluentValidation
+- **API:** ASP.NET Core 10, EF Core (SQL Server), FluentValidation, ASP.NET Core Rate Limiting
 - **Auth:** Keycloak (JWT/OAuth2) — clients `orderpay-swagger` (issues tokens) + `orderpay-webapi` (bearer-only)
 - **Observability:** Serilog + Seq, OpenTelemetry
 - **Infrastructure:** Docker Compose, Kubernetes (Minikube), SQL Server 2025
@@ -145,6 +145,6 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 2 — Unit Tests (29/29) | ✅ Done |
 | K8s deployment | ✅ Done |
 | 3 — Orders Bounded Context | ✅ Done |
-| 4 — Resilience (Polly) | pending |
-| 5 — CI/CD Pipeline | pending |
+| 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
+| 5 — CI/CD Pipeline | ✅ Done |
 | 6 — Frontend | optional |
