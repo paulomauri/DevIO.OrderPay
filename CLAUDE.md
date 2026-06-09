@@ -142,14 +142,14 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | Phase | Status |
 |---|---|
 | 1 — Authentication | ✅ Done |
-| 2 — Unit Tests (29/29) | ✅ Done |
+| 2 — Unit Tests (198/198) | ✅ Done |
 | K8s deployment | ✅ Done |
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
-| 7 — Payment Bounded Context | pending |
-| 8 — Order State Machine + Domain Events + Outbox | pending |
-| 6 — Frontend | optional |
+| 6 — Frontend (React + Next.js + Redux) | pending |
+| 7 — Payment Bounded Context + Idempotency | pending |
+| 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
 
 ## Phase 7 — Payment Bounded Context (pending)
 
@@ -186,9 +186,16 @@ New bounded context `DevIO.OrderPay.Payment` with its own domain, application, a
 **Outbox pattern**
 - `OutboxMessage` table — written atomically in the same EF Core transaction as the aggregate save; each message has a stable GUID `Id`
 - `ProcessedOutboxMessage` table — stores consumed message IDs
-- `OutboxWorker` (`IHostedService`) — polls, checks `ProcessedOutboxMessage` before dispatching; if already present, skips; marks done after success
-- Dispatcher uses MediatR
+- `OutboxWorker` (`IHostedService`) — polls, publishes to RabbitMQ via MassTransit, marks done after success
+
+**Message broker — RabbitMQ + MassTransit**
+- RabbitMQ as the message broker — exchange/queue routing for domain events
+- MassTransit as the .NET abstraction — handles retries, dead-letter queues, consumer registration
+- NuGet: `MassTransit`, `MassTransit.RabbitMQ`
+- Consumers: `PaymentConfirmedConsumer`, `OrderShippedConsumer`, `OrderCancelledConsumer`
+- Each consumer checks `ProcessedOutboxMessage` before executing (idempotency dedup by `OutboxMessage.Id`)
+- RabbitMQ container added to `docker-compose.yml` and K8s manifests
 
 **Idempotency guarantee:** every downstream side effect runs at-least-once but is safe to repeat — dedup by `OutboxMessage.Id` against `ProcessedOutboxMessage`.
 
-**End-to-end guarantee:** Phase 7 (at-most-once charge) + Phase 8 (at-least-once + idempotent consumers) = effectively-once semantics across the payment and order pipeline.
+**End-to-end guarantee:** Phase 7 (at-most-once charge) + Phase 8 (at-least-once + idempotent consumers via RabbitMQ/MassTransit) = effectively-once semantics across the payment and order pipeline.
