@@ -1,0 +1,225 @@
+root = true
+
+# ── All files ─────────────────────────────────────────────────────────────────
+[*]
+indent_style             = space
+indent_size              = 4
+end_of_line              = lf
+charset                  = utf-8
+trim_trailing_whitespace = true
+insert_final_newline     = true
+
+# ── C# files ──────────────────────────────────────────────────────────────────
+[*.cs]
+
+# Language version — C# 14 (.NET 10)
+# Enforced via Directory.Build.props; editorconfig signals intent to tools/IDE
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+
+# ── New C# 14 / modern features ───────────────────────────────────────────────
+
+# field keyword — semi-auto properties (C# 14)
+# IDE0280: Use 'field' keyword instead of backing field
+dotnet_diagnostic.IDE0280.severity = suggestion
+
+# Primary constructors (C# 12+)
+# IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0290.severity = suggestion
+
+# Collection expressions (C# 12+)
+# IDE0300: Use collection expression for array
+dotnet_diagnostic.IDE0300.severity = warning
+# IDE0301: Use collection expression for empty
+dotnet_diagnostic.IDE0301.severity = warning
+# IDE0302: Use collection expression for stackalloc
+dotnet_diagnostic.IDE0302.severity = warning
+# IDE0303: Use collection expression for Create()
+dotnet_diagnostic.IDE0303.severity = warning
+# IDE0304: Use collection expression for builder
+dotnet_diagnostic.IDE0304.severity = warning
+# IDE0305: Use collection expression for fluent
+dotnet_diagnostic.IDE0305.severity = warning
+
+# Null checks
+# IDE0270: Use null coalescing assignment
+dotnet_diagnostic.IDE0270.severity = warning
+# IDE0029 / IDE0030: Use coalesce expression
+dotnet_diagnostic.IDE0029.severity = warning
+dotnet_diagnostic.IDE0030.severity = warning
+
+# ── Pattern matching ──────────────────────────────────────────────────────────
+
+# IDE0019: Use pattern matching (is with cast)
+dotnet_diagnostic.IDE0019.severity = warning
+csharp_style_pattern_matching_over_is_with_cast_check = true : warning
+
+# IDE0020: Use pattern matching (is + null)
+dotnet_diagnostic.IDE0020.severity = warning
+
+# IDE0066: Use switch expression
+dotnet_diagnostic.IDE0066.severity = suggestion
+csharp_style_prefer_switch_expression = true : suggestion
+
+# IDE0078: Use pattern matching
+dotnet_diagnostic.IDE0078.severity = warning
+csharp_style_prefer_pattern_matching = true : warning
+
+# IDE0083: Use pattern matching (not operator)
+dotnet_diagnostic.IDE0083.severity = warning
+csharp_style_prefer_not_pattern = true : warning
+
+# IDE0084: Use pattern matching (IsNotType)
+dotnet_diagnostic.IDE0084.severity = warning
+
+# ── Null-safety ───────────────────────────────────────────────────────────────
+
+# IDE0031: Use null propagation (?.)
+dotnet_diagnostic.IDE0031.severity = warning
+dotnet_style_null_propagation = true : warning
+
+# IDE0041: Use is null check
+dotnet_diagnostic.IDE0041.severity = warning
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true : warning
+
+# IDE0150: Prefer null check over type check
+dotnet_diagnostic.IDE0150.severity = warning
+csharp_style_prefer_null_check_over_type_check = true : warning
+
+# ── Expressions & declarations ────────────────────────────────────────────────
+
+# IDE0017: Object initializers
+dotnet_diagnostic.IDE0017.severity = warning
+dotnet_style_object_initializer = true : warning
+
+# IDE0028: Collection initializers
+dotnet_diagnostic.IDE0028.severity = warning
+dotnet_style_collection_initializer = true : warning
+
+# IDE0090: Simplify new expression (target-typed new)
+dotnet_diagnostic.IDE0090.severity = warning
+csharp_style_implicit_object_creation_when_type_is_apparent = true : warning
+
+# IDE0056: Use index operator (^1)
+dotnet_diagnostic.IDE0056.severity = warning
+csharp_style_prefer_index_operator = true : warning
+
+# IDE0057: Use range operator (..)
+dotnet_diagnostic.IDE0057.severity = warning
+csharp_style_prefer_range_operator = true : warning
+
+# IDE0054 / IDE0074: Use compound / coalesce assignment
+dotnet_diagnostic.IDE0054.severity = warning
+dotnet_diagnostic.IDE0074.severity = warning
+dotnet_style_prefer_compound_assignment = true : warning
+
+# IDE0075: Simplify conditional expression
+dotnet_diagnostic.IDE0075.severity = warning
+dotnet_style_prefer_simplified_boolean_expressions = true : warning
+
+# IDE0180: Use tuple swap
+dotnet_diagnostic.IDE0180.severity = warning
+csharp_style_prefer_tuple_swap = true : warning
+
+# IDE0230: Use UTF-8 string literal (u8 suffix)
+dotnet_diagnostic.IDE0230.severity = suggestion
+csharp_style_prefer_utf8_string_literals = true : suggestion
+
+# ── var preferences ───────────────────────────────────────────────────────────
+
+csharp_style_var_for_built_in_types            = false : warning
+csharp_style_var_when_type_is_apparent         = true  : warning
+csharp_style_var_elsewhere                     = false : suggestion
+
+# ── Expression-bodied members ─────────────────────────────────────────────────
+
+csharp_style_expression_bodied_methods         = when_on_single_line : suggestion
+csharp_style_expression_bodied_constructors    = false : silent
+csharp_style_expression_bodied_operators       = when_on_single_line : suggestion
+csharp_style_expression_bodied_properties      = true  : warning
+csharp_style_expression_bodied_indexers        = true  : warning
+csharp_style_expression_bodied_accessors       = true  : warning
+csharp_style_expression_bodied_lambdas         = true  : warning
+csharp_style_expression_bodied_local_functions = when_on_single_line : suggestion
+
+# ── Code quality ──────────────────────────────────────────────────────────────
+
+# IDE0059: Remove unnecessary value assignment
+dotnet_diagnostic.IDE0059.severity = warning
+csharp_style_unused_value_assignment_preference = discard_variable : warning
+
+# IDE0060: Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = warning
+
+# IDE0062: Make local function static
+dotnet_diagnostic.IDE0062.severity = warning
+csharp_prefer_static_local_function = true : warning
+
+# CA1862: Use StringComparison overload
+dotnet_diagnostic.CA1862.severity = warning
+
+# CA1805: Do not initialize unnecessarily
+dotnet_diagnostic.CA1805.severity = warning
+
+# CA1851: Multiple enumerations of IEnumerable
+dotnet_diagnostic.CA1851.severity = warning
+
+# ── Naming conventions ────────────────────────────────────────────────────────
+
+# Interfaces must start with I
+dotnet_naming_rule.interface_should_start_with_i.severity        = warning
+dotnet_naming_rule.interface_should_start_with_i.symbols         = interfaces
+dotnet_naming_rule.interface_should_start_with_i.style           = i_prefix_style
+
+dotnet_naming_symbols.interfaces.applicable_kinds                = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities      = public, internal
+
+dotnet_naming_style.i_prefix_style.required_prefix               = I
+dotnet_naming_style.i_prefix_style.capitalization                = pascal_case
+
+# Private fields: _camelCase
+dotnet_naming_rule.private_fields_camel_underscore.severity      = warning
+dotnet_naming_rule.private_fields_camel_underscore.symbols       = private_fields
+dotnet_naming_rule.private_fields_camel_underscore.style         = underscore_camel_style
+
+dotnet_naming_symbols.private_fields.applicable_kinds            = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities  = private
+
+dotnet_naming_style.underscore_camel_style.required_prefix       = _
+dotnet_naming_style.underscore_camel_style.capitalization        = camel_case
+
+# ── Formatting ────────────────────────────────────────────────────────────────
+
+csharp_new_line_before_open_brace                               = all
+csharp_new_line_before_else                                     = true
+csharp_new_line_before_catch                                    = true
+csharp_new_line_before_finally                                  = true
+csharp_new_line_before_members_in_object_initializers          = true
+csharp_new_line_before_members_in_anonymous_types              = true
+csharp_new_line_between_query_expression_clauses               = true
+
+csharp_indent_case_contents                                    = true
+csharp_indent_switch_labels                                    = true
+csharp_indent_labels                                           = flush_left
+
+csharp_space_after_cast                                        = false
+csharp_space_after_keywords_in_control_flow_statements         = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses    = false
+csharp_space_before_colon_in_inheritance_clause               = true
+csharp_space_after_colon_in_inheritance_clause                = true
+csharp_space_around_binary_operators                           = before_and_after
+
+csharp_preserve_single_line_statements                         = false
+csharp_preserve_single_line_blocks                             = true
+
+# ── YAML / JSON / XML ─────────────────────────────────────────────────────────
+[*.{yml,yaml,json}]
+indent_size              = 2
+trim_trailing_whitespace = true
+
+[*.xml]
+indent_size              = 2
+
+# ── Markdown ──────────────────────────────────────────────────────────────────
+[*.md]
+trim_trailing_whitespace = false
