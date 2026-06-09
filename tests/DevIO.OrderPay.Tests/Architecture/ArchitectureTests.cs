@@ -13,7 +13,6 @@ public class ArchitectureTests
     private static readonly Assembly CustomerApp = typeof(DevIO.OrderPay.Customer.Application.DTOs.CustomerRequest).Assembly;
     private static readonly Assembly OrderApp = typeof(DevIO.OrderPay.Order.Application.Services.OrderService).Assembly;
     private static readonly Assembly Infra = typeof(DevIO.OrderPay.Infra.AppDbContext).Assembly;
-    private static readonly Assembly WebApi = typeof(Program).Assembly;
 
     // ── Domain: no EF Core ────────────────────────────────────────────
 

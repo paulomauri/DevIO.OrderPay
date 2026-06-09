@@ -1,7 +1,5 @@
-﻿using DevIO.OrderPay.Order.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using DevIO.OrderPay.Order.Exceptions;
 
 namespace DevIO.OrderPay.Order.Models;
 
@@ -9,26 +7,27 @@ public class Order
 {
     public Order() { }
 
+    [SetsRequiredMembers]
     public Order(Guid customerId)
     {
         Id = Guid.NewGuid();
         CustomerId = customerId;
         OrderDate = DateTime.UtcNow;
         Status = OrderStatus.Pending;
-        Items = new List<OrderItem>();
+        Items = [];
     }
 
-    public Guid Id { get; set; }
-    public Guid CustomerId { get; set; }
-    public DateTime OrderDate { get; set; }
-    public string Details { get; set; }
-    public Price TotalPrice { get; set; }
-    public Price TotalDiscount { get; set; }
+    public required Guid Id { get; set; }
+    public required Guid CustomerId { get; set; }
+    public required DateTime OrderDate { get; set; }
+    public string Details { get; set; } = string.Empty;
+    public Price TotalPrice { get; set; } = new(0);
+    public Price TotalDiscount { get; set; } = new(0);
     public DateTime? DeliveryDate { get; set; }
-    public List<OrderItem> Items { get; private set; }
-    public OrderStatus Status { get; set; }
-    public Customer Customer { get; set; }
-    public DateTime CreatedAt {  get; set; }
+    public List<OrderItem> Items { get; private set; } = [];
+    public required OrderStatus Status { get; set; }
+    public Customer? Customer { get; set; }
+    public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
     public OrderItem AddItem(OrderItem orderItem)

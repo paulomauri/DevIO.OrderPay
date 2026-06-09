@@ -9,9 +9,9 @@ public static class OpenTelemetryExtensions
     public static WebApplicationBuilder AddOpenTelemetryObservability(
        this WebApplicationBuilder builder)
     {
-        var serviceName = builder.Configuration["OpenTelemetry:ServiceName"] ?? "DevIO.OrderPay.WebApi";
-        var serviceVersion = builder.Configuration["OpenTelemetry:ServiceVersion"] ?? "1.0.0";
-        var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://seq:5341";
+        string serviceName = builder.Configuration["OpenTelemetry:ServiceName"] ?? "DevIO.OrderPay.WebApi";
+        string serviceVersion = builder.Configuration["OpenTelemetry:ServiceVersion"] ?? "1.0.0";
+        string otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://seq:5341";
 
         _ = builder.Services
             .AddOpenTelemetry()

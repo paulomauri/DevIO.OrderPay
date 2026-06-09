@@ -4,19 +4,14 @@ using DevIO.OrderPay.Order.Models;
 
 namespace DevIO.OrderPay.Order.Application.Services;
 
-public class ProductService : IProductService
+public class ProductService(IProductRepository repository) : IProductService
 {
-    private readonly IProductRepository _repository;
-
-    public ProductService(IProductRepository repository)
-    {
-        _repository = repository;
-    }
+    private readonly IProductRepository _repository = repository;
 
     public async Task<IEnumerable<ProductResponse>> GetAllAsync()
     {
         var products = await _repository.GetAllAsync();
-        return products.Select(MapToResponse).ToList();
+        return [.. products.Select(MapToResponse)];
     }
 
     public async Task<ProductResponse?> GetByIdAsync(Guid id)

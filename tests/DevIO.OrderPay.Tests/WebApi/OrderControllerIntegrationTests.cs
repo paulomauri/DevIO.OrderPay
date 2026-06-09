@@ -6,15 +6,11 @@ using System.Net.Http.Json;
 
 namespace DevIO.OrderPay.Tests.WebApi;
 
-public class OrderControllerIntegrationTests : IClassFixture<OrderPayWebApplicationFactory>
+public class OrderControllerIntegrationTests(OrderPayWebApplicationFactory factory)
+    : IClassFixture<OrderPayWebApplicationFactory>
 {
-    private readonly OrderPayWebApplicationFactory _factory;
+    private readonly OrderPayWebApplicationFactory _factory = factory;
     private const string BaseUrl = "/api/v1/Order";
-
-    public OrderControllerIntegrationTests(OrderPayWebApplicationFactory factory)
-    {
-        _factory = factory;
-    }
 
     // ── 401 — no token ───────────────────────────────────────
 
@@ -301,7 +297,7 @@ public class OrderControllerIntegrationTests : IClassFixture<OrderPayWebApplicat
 
     // ── Helpers ───────────────────────────────────────────────
 
-    private async Task<OrderResponse?> CreateOrderAsync(HttpClient client)
+    private static async Task<OrderResponse?> CreateOrderAsync(HttpClient client)
     {
         var response = await client.PostAsJsonAsync(BaseUrl, ValidRequest());
         return await response.Content.ReadFromJsonAsync<OrderResponse>();

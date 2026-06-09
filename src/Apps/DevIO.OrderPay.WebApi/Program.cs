@@ -15,9 +15,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
-using System.Reflection.Metadata;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // ── Logging ────────────────────────────────────────────────
 builder.AddSerilogLogging();
@@ -28,10 +27,8 @@ builder.AddOpenTelemetryObservability();
 // ── Controllers + API ──────────────────────────────────────
 builder.Services.AddControllers()
      .ConfigureApiBehaviorOptions(options =>
-     {
          // let FluentValidation handle validation responses
-         options.SuppressModelStateInvalidFilter = true;
-     });
+         options.SuppressModelStateInvalidFilter = true);
 builder.Services.AddEndpointsApiExplorer();
 
 
@@ -57,7 +54,7 @@ builder.Services.AddSwaggerGen(options =>
 
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>() { }
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 });
 
@@ -118,17 +115,14 @@ builder.Services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
 // ── Health Check ────────────────────────────────────────────────────-
 builder.Services.AddHealthChecks();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // apply migrations on startup
 await app.InitializeDatabaseAsync();
 
 // ── Middleware pipeline ────────────────────────────────────
-app.UseSerilogRequestLogging(options =>
-{
-    options.MessageTemplate =
-        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
-});
+app.UseSerilogRequestLogging(options => options.MessageTemplate =
+        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms");
 
 // Apply Middleware
 // CorrelationId MUST come before RequestLogging

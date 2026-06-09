@@ -10,14 +10,9 @@ namespace DevIO.OrderPay.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class ProductController : ControllerBase
+public class ProductController(IProductService service) : ControllerBase
 {
-    private readonly IProductService _service;
-
-    public ProductController(IProductService service)
-    {
-        _service = service;
-    }
+    private readonly IProductService _service = service;
 
     [HttpGet]
     [Authorize(Policy = "AdminOrCustomer")]
@@ -71,7 +66,7 @@ public class ProductController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
+        bool result = await _service.DeleteAsync(id);
         return result ? Ok() : NotFound();
     }
 

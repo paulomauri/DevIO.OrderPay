@@ -12,13 +12,9 @@ namespace DevIO.OrderPay.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class CustomerController : ControllerBase
+public class CustomerController(ICustomerService service) : ControllerBase
 {
-    private readonly ICustomerService _service;
-    public CustomerController(ICustomerService service)
-    {
-        _service = service;
-    }
+    private readonly ICustomerService _service = service;
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "AdminOrCustomer")]
@@ -103,7 +99,7 @@ public class CustomerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
+        bool result = await _service.DeleteAsync(id);
         return result == false ? NotFound() : Ok();
     }
 }

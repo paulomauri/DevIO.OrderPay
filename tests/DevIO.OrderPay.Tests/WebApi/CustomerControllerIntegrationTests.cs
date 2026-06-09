@@ -6,15 +6,11 @@ using System.Net.Http.Json;
 
 namespace DevIO.OrderPay.Tests.WebApi;
 
-public class CustomerControllerIntegrationTests : IClassFixture<OrderPayWebApplicationFactory>
+public class CustomerControllerIntegrationTests(OrderPayWebApplicationFactory factory)
+    : IClassFixture<OrderPayWebApplicationFactory>
 {
-    private readonly OrderPayWebApplicationFactory _factory;
+    private readonly OrderPayWebApplicationFactory _factory = factory;
     private const string BaseUrl = "/api/v1/Customer";
-
-    public CustomerControllerIntegrationTests(OrderPayWebApplicationFactory factory)
-    {
-        _factory = factory;
-    }
 
     // ── 401 — no token ───────────────────────────────────────
 

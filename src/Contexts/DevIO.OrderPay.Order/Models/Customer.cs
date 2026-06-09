@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace DevIO.OrderPay.Order.Models;
 
-namespace DevIO.OrderPay.Order.Models;
-
-public class Customer
+public class Customer(Guid id, string name)
 {
-    public Customer(Guid id,  string name)
-    {
-        CustomerId = id;
-        Name = name;
-    }
-    public Guid CustomerId { get; set; }
-    public string Name { get; set; }
+    public Guid CustomerId { get; set; } = id;
+    public string Name { get; set; } = name;
 }

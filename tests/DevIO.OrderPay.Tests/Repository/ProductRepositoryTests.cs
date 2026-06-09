@@ -83,7 +83,7 @@ public class ProductRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
-        var result = await _repository.UpdateSkuAsync(product.Id, "SKU-NEW");
+        bool result = await _repository.UpdateSkuAsync(product.Id, "SKU-NEW");
         await _repository.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
@@ -95,7 +95,7 @@ public class ProductRepositoryTests : IDisposable
     [Fact]
     public async Task UpdateSkuAsync_NonExistingProduct_ReturnsFalse()
     {
-        var result = await _repository.UpdateSkuAsync(Guid.NewGuid(), "SKU-X");
+        bool result = await _repository.UpdateSkuAsync(Guid.NewGuid(), "SKU-X");
 
         result.Should().BeFalse();
     }

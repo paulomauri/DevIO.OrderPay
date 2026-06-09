@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!-- C# 14 — ships with .NET 10 SDK 10.0.100+ -->
+    <LangVersion>14</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Enforce EditorConfig analyzer rules across all projects -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+  </PropertyGroup>
+</Project>

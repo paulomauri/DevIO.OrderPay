@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DevIO.OrderPay.Customer.Models;
 
 public class Customer
 {
-    private Customer() { } // EF Core
+    private Customer() { }
 
+    [SetsRequiredMembers]
     public Customer(string nome, Email email, string cpf, string mobile)
     {
         Id = Guid.NewGuid();
@@ -19,17 +18,17 @@ public class Customer
 
     public Guid Id { get; set; }
     public string Nome { get; private set; } = string.Empty;
-    public Email Email { get; private set; }
+    public required Email Email { get; set; }
     public string CPF { get; private set; } = string.Empty;
     public string? Celular { get; set; } = string.Empty;
-    public List<Address> Enderecos { get; set; } = new List<Address>();
+    public List<Address> Enderecos { get; set; } = [];
 
     public void Update(string nome, string email, string cpf, string mobile)
     {
-        this.Nome = nome;
-        this.CPF = cpf;
-        this.Celular = mobile;
-        this.Email = new Email(email);
+        Nome = nome;
+        CPF = cpf;
+        Celular = mobile;
+        Email = new Email(email);
     }
 
     public Address AddEndereco(Address endereco)

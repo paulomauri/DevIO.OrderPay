@@ -12,14 +12,9 @@ namespace DevIO.OrderPay.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class OrderController : ControllerBase
+public class OrderController(IOrderService service) : ControllerBase
 {
-    private readonly IOrderService _service;
-
-    public OrderController(IOrderService service)
-    {
-        _service = service;
-    }
+    private readonly IOrderService _service = service;
 
     [HttpGet]
     [Authorize(Policy = "AdminOnly")]
@@ -80,7 +75,7 @@ public class OrderController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
+        bool result = await _service.DeleteAsync(id);
         return result ? Ok() : NotFound();
     }
 

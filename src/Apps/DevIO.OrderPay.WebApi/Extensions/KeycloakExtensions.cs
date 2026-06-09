@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using DevIO.OrderPay.WebApi.Resilience;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Polly;
-using Polly.Timeout;
 using System.Security.Claims;
 
 namespace DevIO.OrderPay.WebApi.Extensions;
@@ -14,11 +11,11 @@ public static class KeycloakExtensions
     public static WebApplicationBuilder AddKeycloakAuthentication(
         this WebApplicationBuilder builder)
     {
-        var authority        = builder.Configuration["Keycloak:Authority"];
-        var audience         = builder.Configuration["Keycloak:Audience"];
-        var metadataAddress  = builder.Configuration["Keycloak:MetadataAddress"];
-        var validIssuer      = builder.Configuration["Keycloak:ValidIssuer"];
-        var requireHttps     = builder.Configuration.GetValue<bool>("Keycloak:RequireHttpsMetadata");
+        string? authority        = builder.Configuration["Keycloak:Authority"];
+        string? audience         = builder.Configuration["Keycloak:Audience"];
+        string? metadataAddress  = builder.Configuration["Keycloak:MetadataAddress"];
+        string? validIssuer      = builder.Configuration["Keycloak:ValidIssuer"];
+        bool requireHttps     = builder.Configuration.GetValue<bool>("Keycloak:RequireHttpsMetadata");
 
         builder.Services
             .AddAuthentication(options =>
@@ -36,8 +33,8 @@ public static class KeycloakExtensions
                 {
                     options.MetadataAddress = metadataAddress;
 
-                    var publicBase   = new Uri(authority!).GetLeftPart(UriPartial.Authority);
-                    var internalBase = new Uri(metadataAddress).GetLeftPart(UriPartial.Authority);
+                    string publicBase   = new Uri(authority!).GetLeftPart(UriPartial.Authority);
+                    string internalBase = new Uri(metadataAddress).GetLeftPart(UriPartial.Authority);
 
                     // Chain: PollyResilienceHandler → HostRewritingHandler → HttpClientHandler
                     // Polly retries the full request (including URL rewrite) on transient failures.
@@ -90,25 +87,16 @@ public static class KeycloakExtensions
 
 // Rewrites the public Keycloak hostname to the internal Docker/K8s hostname in every
 // backchannel HTTP request the JwtBearer middleware makes (discovery doc + JWKS).
-internal sealed class HostRewritingHandler : DelegatingHandler
+internal sealed class HostRewritingHandler(string publicBase, string internalBase, HttpMessageHandler innerHandler)
+    : DelegatingHandler(innerHandler)
 {
-    private readonly string _publicBase;
-    private readonly string _internalBase;
-
-    public HostRewritingHandler(string publicBase, string internalBase, HttpMessageHandler innerHandler)
-        : base(innerHandler)
-    {
-        _publicBase   = publicBase;
-        _internalBase = internalBase;
-    }
-
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (request.RequestUri is not null)
         {
-            var rewritten = request.RequestUri.ToString()
-                .Replace(_publicBase, _internalBase);
+            string rewritten = request.RequestUri.ToString()
+                .Replace(publicBase, internalBase, StringComparison.OrdinalIgnoreCase);
             request.RequestUri = new Uri(rewritten);
         }
         return base.SendAsync(request, cancellationToken);
@@ -117,21 +105,14 @@ internal sealed class HostRewritingHandler : DelegatingHandler
 
 // Wraps any DelegatingHandler chain with a Polly resilience pipeline.
 // Sits at the outermost position so retries re-enter the full handler chain.
-internal sealed class PollyResilienceHandler : DelegatingHandler
+internal sealed class PollyResilienceHandler(
+    ResiliencePipeline<HttpResponseMessage> pipeline,
+    HttpMessageHandler innerHandler)
+    : DelegatingHandler(innerHandler)
 {
-    private readonly ResiliencePipeline<HttpResponseMessage> _pipeline;
-
-    public PollyResilienceHandler(
-        ResiliencePipeline<HttpResponseMessage> pipeline,
-        HttpMessageHandler innerHandler)
-        : base(innerHandler)
-    {
-        _pipeline = pipeline;
-    }
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
-        => await _pipeline.ExecuteAsync(
+        => await pipeline.ExecuteAsync(
             ct => new ValueTask<HttpResponseMessage>(base.SendAsync(request, ct)),
             cancellationToken);
 }

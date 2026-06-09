@@ -137,7 +137,7 @@ public class OrderRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
-        var result = await _repository.UpdateStatusAsync(order.Id, OrderStatus.Shipped);
+        bool result = await _repository.UpdateStatusAsync(order.Id, OrderStatus.Shipped);
         await _repository.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
@@ -149,7 +149,7 @@ public class OrderRepositoryTests : IDisposable
     [Fact]
     public async Task UpdateStatusAsync_NonExistingOrder_ReturnsFalse()
     {
-        var result = await _repository.UpdateStatusAsync(Guid.NewGuid(), OrderStatus.Delivered);
+        bool result = await _repository.UpdateStatusAsync(Guid.NewGuid(), OrderStatus.Delivered);
 
         result.Should().BeFalse();
     }
@@ -165,7 +165,7 @@ public class OrderRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         var deliveryDate = DateTime.UtcNow.AddDays(7);
-        var result = await _repository.UpdateDeliveryDateAsync(order.Id, deliveryDate);
+        bool result = await _repository.UpdateDeliveryDateAsync(order.Id, deliveryDate);
         await _repository.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
@@ -177,7 +177,7 @@ public class OrderRepositoryTests : IDisposable
     [Fact]
     public async Task UpdateDeliveryDateAsync_NonExistingOrder_ReturnsFalse()
     {
-        var result = await _repository.UpdateDeliveryDateAsync(Guid.NewGuid(), DateTime.UtcNow);
+        bool result = await _repository.UpdateDeliveryDateAsync(Guid.NewGuid(), DateTime.UtcNow);
 
         result.Should().BeFalse();
     }

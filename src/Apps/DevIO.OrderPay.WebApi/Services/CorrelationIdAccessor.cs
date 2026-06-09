@@ -1,14 +1,9 @@
 ﻿namespace DevIO.OrderPay.WebApi.Services;
 
-public class CorrelationIdAccessor : ICorrelationIdAccessor
+public class CorrelationIdAccessor(IHttpContextAccessor accessor) : ICorrelationIdAccessor
 {
-    private readonly IHttpContextAccessor _accessor;
     private const string Header = "X-Correlation-Id";
-
-    public CorrelationIdAccessor(IHttpContextAccessor accessor)
-    {
-        _accessor = accessor;
-    }
+    private readonly IHttpContextAccessor _accessor = accessor;
 
     public string CorrelationId =>
         _accessor.HttpContext?.Response.Headers[Header].ToString()

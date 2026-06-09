@@ -23,7 +23,7 @@ public class KeycloakRoleClaimTransformer : IClaimsTransformation
 
             foreach (var role in roles.EnumerateArray())
             {
-                var roleName = role.GetString();
+                string? roleName = role.GetString();
                 if (string.IsNullOrEmpty(roleName)) continue;
 
                 // add as standard ClaimTypes.Role

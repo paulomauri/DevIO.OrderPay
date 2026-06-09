@@ -112,7 +112,7 @@ public class OrderServiceTests
         var order = BuildOrder();
         _repoMock.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
 
-        var result = await _sut.DeleteAsync(order.Id);
+        bool result = await _sut.DeleteAsync(order.Id);
 
         result.Should().BeTrue();
         _repoMock.Verify(r => r.DeleteAsync(order.Id), Times.Once);
@@ -125,7 +125,7 @@ public class OrderServiceTests
         _repoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
                  .ReturnsAsync((Order.Models.Order?)null);
 
-        var result = await _sut.DeleteAsync(Guid.NewGuid());
+        bool result = await _sut.DeleteAsync(Guid.NewGuid());
 
         result.Should().BeFalse();
     }
