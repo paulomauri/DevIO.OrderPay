@@ -3,8 +3,10 @@ using DevIO.OrderPay.Order.Application.DTOs;
 using DevIO.OrderPay.Order.Application.Services;
 using DevIO.OrderPay.Order.Exceptions;
 using DevIO.OrderPay.Order.Models;
+using DevIO.OrderPay.WebApi.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DevIO.OrderPay.WebApi.Controllers;
 
@@ -12,6 +14,7 @@ namespace DevIO.OrderPay.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.GeneralPolicy)]
 public class OrderController(IOrderService service) : ControllerBase
 {
     private readonly IOrderService _service = service;
@@ -46,6 +49,7 @@ public class OrderController(IOrderService service) : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "AdminOrCustomer")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -71,6 +75,7 @@ public class OrderController(IOrderService service) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
@@ -81,6 +86,7 @@ public class OrderController(IOrderService service) : ControllerBase
 
     [HttpPatch("{id:guid}/status")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,6 +102,7 @@ public class OrderController(IOrderService service) : ControllerBase
 
     [HttpPatch("{id:guid}/delivery-date")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateDeliveryDate(Guid id, [FromBody] DateTime deliveryDate)
@@ -106,6 +113,7 @@ public class OrderController(IOrderService service) : ControllerBase
 
     [HttpPost("{id:guid}/items")]
     [Authorize(Policy = "AdminOrCustomer")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -128,6 +136,7 @@ public class OrderController(IOrderService service) : ControllerBase
 
     [HttpDelete("{id:guid}/items/{itemId:guid}")]
     [Authorize(Policy = "AdminOrCustomer")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveItem(Guid id, Guid itemId)

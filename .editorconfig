@@ -187,6 +187,8 @@ dotnet_diagnostic.CA1861.severity                               = warning  # avo
 dotnet_diagnostic.CA1862.severity                               = error    # use StringComparison overload for culture-safe comparison
 dotnet_diagnostic.CA1865.severity                               = warning  # use char overload for single-char
 dotnet_diagnostic.CA1869.severity                               = warning  # cache JsonSerializerOptions instances
+dotnet_diagnostic.CA1848.severity                               = none     # LoggerMessage delegates — project uses structured logging directly
+dotnet_diagnostic.CA1873.severity                               = none     # string arg evaluation — acceptable with structured logging
 dotnet_diagnostic.CA2016.severity                               = error    # forward CancellationToken to methods that take one
 dotnet_diagnostic.CA1510.severity                               = error    # use ArgumentNullException.ThrowIfNull
 

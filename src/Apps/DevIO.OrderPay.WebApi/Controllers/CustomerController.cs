@@ -2,9 +2,11 @@
 using DevIO.OrderPay.Customer.Application.Services;
 using DevIO.OrderPay.Customer.Application.DTOs;
 using DevIO.OrderPay.Customer.Exceptions;
+using DevIO.OrderPay.WebApi.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DevIO.OrderPay.WebApi.Controllers;
 
@@ -12,6 +14,7 @@ namespace DevIO.OrderPay.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.GeneralPolicy)]
 public class CustomerController(ICustomerService service) : ControllerBase
 {
     private readonly ICustomerService _service = service;
@@ -38,6 +41,7 @@ public class CustomerController(ICustomerService service) : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -59,6 +63,7 @@ public class CustomerController(ICustomerService service) : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -81,6 +86,7 @@ public class CustomerController(ICustomerService service) : ControllerBase
 
     [HttpPatch("{id:guid}")]
     [Authorize(Policy = "AdminOrCustomer")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -95,6 +101,7 @@ public class CustomerController(ICustomerService service) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
+    [EnableRateLimiting(RateLimitingExtensions.WritesPolicy)]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Delete(Guid id)

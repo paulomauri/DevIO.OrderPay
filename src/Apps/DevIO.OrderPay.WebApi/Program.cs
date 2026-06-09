@@ -74,6 +74,9 @@ builder.Services.AddApiVersioning(options =>
 // ── Authentication — Keycloak JWT ──────────────────────────
 builder.AddKeycloakAuthentication();
 
+// ── Rate Limiting ──────────────────────────────────────────
+builder.AddRateLimiting();
+
 // ── Role claim transformer ─────────────────────────────────
 builder.Services.AddScoped<IClaimsTransformation, KeycloakRoleClaimTransformer>();
 
@@ -150,6 +153,7 @@ app.MapHealthChecks("/health");
 //app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

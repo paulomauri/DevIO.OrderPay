@@ -8,6 +8,17 @@ API entry point — controllers, extensions, auth middleware, Program.cs.
 - `Extensions/DatabaseExtensions.cs` — registers DbContext, runs migrations on startup
 - `Extensions/SerilogExtensions.cs` — Serilog + Seq
 - `Extensions/OpenTelemetryExtensions.cs` — OTLP tracing/metrics
+- `Extensions/RateLimitingExtensions.cs` — two named policies: `"general"` (fixed window, reads) and `"writes"` (sliding window, mutations); keyed by `sub` claim → IP fallback; limits configurable via `RateLimiting:*` config keys; disabled in tests via `PostConfigure<RateLimiterSettings>`
+
+## Rate limiting config keys
+
+| Key | Default | Purpose |
+|---|---|---|
+| `RateLimiting:Enabled` | `true` | Master switch — set `false` in tests |
+| `RateLimiting:General:PermitLimit` | `100` | Max requests/min for read endpoints |
+| `RateLimiting:Writes:PermitLimit` | `20` | Max requests/min for write endpoints |
+
+Middleware order: `UseAuthentication` → `UseRateLimiter` → `UseAuthorization` (rate limiter runs after auth so `sub` claim is available for per-user partitioning).
 
 ## Auth config keys
 
