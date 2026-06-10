@@ -25,6 +25,38 @@
     <File Path="k8s/webapi/deployment.yaml" />
     <File Path="k8s/webapi/service.yaml" />
   </Folder>
+  <Folder Name="/nginx/">
+    <File Path="nginx/nginx.conf" />
+  </Folder>
+  <Folder Name="/orderpay-web/">
+    <File Path="orderpay-web/CLAUDE.md" />
+    <File Path="orderpay-web/Dockerfile" />
+    <File Path="orderpay-web/package.json" />
+    <File Path="orderpay-web/tsconfig.json" />
+    <File Path="orderpay-web/eslint.config.mjs" />
+  </Folder>
+  <Folder Name="/orderpay-web/src/">
+    <File Path="orderpay-web/src/proxy.ts" />
+    <File Path="orderpay-web/src/lib/auth.ts" />
+    <File Path="orderpay-web/src/lib/providers.tsx" />
+    <File Path="orderpay-web/src/lib/registry.tsx" />
+    <File Path="orderpay-web/src/styles/theme.ts" />
+    <File Path="orderpay-web/src/styles/GlobalStyle.ts" />
+    <File Path="orderpay-web/src/styles/styled.d.ts" />
+    <File Path="orderpay-web/src/services/api.ts" />
+    <File Path="orderpay-web/src/services/customers.ts" />
+    <File Path="orderpay-web/src/services/products.ts" />
+    <File Path="orderpay-web/src/services/orders.ts" />
+    <File Path="orderpay-web/src/store/index.ts" />
+    <File Path="orderpay-web/src/store/uiSlice.ts" />
+    <File Path="orderpay-web/src/store/cartSlice.ts" />
+    <File Path="orderpay-web/src/types/next-auth.d.ts" />
+    <File Path="orderpay-web/src/types/customer.ts" />
+    <File Path="orderpay-web/src/types/product.ts" />
+    <File Path="orderpay-web/src/types/order.ts" />
+    <File Path="orderpay-web/src/app/layout.tsx" />
+    <File Path="orderpay-web/src/app/page.tsx" />
+  </Folder>
   <Folder Name="/keycloak/">
     <File Path="keycloak/realm-export.json" />
     <File Path="keycloak/setup.sh" />

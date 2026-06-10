@@ -135,8 +135,8 @@ npm run lint
 | 1 — Bootstrap + folder structure | ✅ Done |
 | 2 — Design tokens + Styled Components | ✅ Done |
 | 3 — Authentication (NextAuth + Keycloak) | ✅ Done |
-| 4 — API layer (Axios + React Query) | pending |
-| 5 — Redux Toolkit (uiSlice + cartSlice) | pending |
+| 4 — API layer (Axios + React Query) | ✅ Done |
+| 5 — Redux Toolkit (uiSlice + cartSlice) | ✅ Done |
 | 6 — Pages + layout | pending |
 | 7 — Components (ui primitives) | pending |
 | 8 — Forms + validation | pending |
