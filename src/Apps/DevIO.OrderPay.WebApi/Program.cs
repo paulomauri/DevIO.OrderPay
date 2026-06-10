@@ -138,7 +138,7 @@ app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "DevIO.OrderPay API v1");
-    options.RoutePrefix = string.Empty;
+    options.RoutePrefix = "swagger";
 });
 
 // keep OpenApi only for development

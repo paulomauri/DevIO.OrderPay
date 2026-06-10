@@ -27,6 +27,47 @@ services:
       - app_network
 
   # ----------------------------------------------------------
+  # orderpay-web — Next.js Frontend
+  # ----------------------------------------------------------
+  orderpay-web:
+    build:
+      context: ./orderpay-web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ""   # empty = same origin; nginx routes /api/ to webapi
+    container_name: orderpay-web
+    restart: unless-stopped
+    environment:
+      - NEXTAUTH_URL=http://localhost
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-orderpay-web}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_ISSUER=http://localhost:8085/realms/orderpay
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  # ----------------------------------------------------------
+  # Nginx — Reverse Proxy
+  # ----------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - orderpay-web
+      - devio.orderpay.webapi
+      - keycloak
+    networks:
+      - app_network
+
+  # ----------------------------------------------------------
   # SQL Server 2025 Developer Edition
   # ----------------------------------------------------------
   sqlserver:
@@ -111,7 +152,7 @@ services:
       KC_DB_PASSWORD: "${POSTGRES_PASSWORD:-Mauri@22}"
 
       KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8085
+      KC_HOSTNAME_PORT: 80
       KC_HTTP_PORT: 8085
 
       KC_HOSTNAME_STRICT: "false"
