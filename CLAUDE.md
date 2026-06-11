@@ -147,7 +147,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
-| 6 — Frontend (React + Next.js + Redux) | pending |
+| 6 — Frontend (React + Next.js + Redux) | 🔄 Steps 1–7 done / Steps 8–10 pending |
 | 7 — Payment Bounded Context + Idempotency | pending |
 | 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
 | 9 — Logistics Webhook (inbound status updates) | pending |
