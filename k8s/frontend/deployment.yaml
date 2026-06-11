@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orderpay-web
+  namespace: orderpay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orderpay-web
+  template:
+    metadata:
+      labels:
+        app: orderpay-web
+    spec:
+      containers:
+        - name: orderpay-web
+          image: paulomauri/orderpay-web:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXTAUTH_URL
+              value: "http://127.0.0.1"
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orderpay-secrets
+                  key: nextauth-secret
+            - name: KEYCLOAK_CLIENT_ID
+              value: "orderpay-web"
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orderpay-secrets
+                  key: keycloak-client-secret
+            # Server-side OIDC discovery uses the internal K8s service name.
+            # KC_HOSTNAME=localhost means tokens have iss=http://localhost/realms/orderpay.
+            # NextAuth validates iss against the issuer field in the discovery doc,
+            # not against this env var, so the internal URL here is safe.
+            - name: KEYCLOAK_ISSUER
+              value: "http://keycloak:8085/realms/orderpay"
+            - name: NEXT_PUBLIC_API_URL
+              value: ""
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /api/auth/providers
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/auth/providers
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5

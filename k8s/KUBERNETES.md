@@ -27,7 +27,14 @@ k8s/
 │   └── service.yaml
 ├── webapi/
 │   ├── deployment.yaml
+│   └── service.yaml         ← ClusterIP (nginx handles external access)
+├── frontend/
+│   ├── deployment.yaml      ← orderpay-web Next.js (ClusterIP)
 │   └── service.yaml
+├── nginx/
+│   ├── configmap.yaml       ← nginx.conf mounted as ConfigMap
+│   ├── deployment.yaml
+│   └── service.yaml         ← LoadBalancer port 80 (single entry point)
 └── seq/
     ├── deployment.yaml
     └── service.yaml
@@ -64,14 +71,26 @@ docker tag devioorderpaywebapi paulomauri/orderpay-webapi:1.0.0
 docker tag devioorderpaywebapi paulomauri/orderpay-webapi:latest
 ```
 
-### 4. Push to Docker Hub
+### 4. Push WebApi to Docker Hub
 
 ```bash
 docker push paulomauri/orderpay-webapi:1.0.0
 docker push paulomauri/orderpay-webapi:latest
 ```
 
-### 5. Verify on Docker Hub
+### 5. Build and push Frontend image
+
+```bash
+docker build \
+    -t paulomauri/orderpay-web:latest \
+    --build-arg NEXT_PUBLIC_API_URL="" \
+    -f orderpay-web/Dockerfile \
+    orderpay-web/
+
+docker push paulomauri/orderpay-web:latest
+```
+
+### 6. Verify on Docker Hub
 
 ```bash
 docker search paulomauri
@@ -166,7 +185,19 @@ kubectl apply -f k8s/seq/
 kubectl apply -f k8s/webapi/
 ```
 
-### 6. Verify everything is running
+### 6. Deploy Frontend
+
+```bash
+kubectl apply -f k8s/frontend/
+```
+
+### 7. Deploy Nginx (reverse proxy — single entry point)
+
+```bash
+kubectl apply -f k8s/nginx/
+```
+
+### 8. Verify everything is running
 
 ```bash
 kubectl get all -n orderpay
@@ -177,6 +208,8 @@ Expected output:
 NAME                                   READY   STATUS      RESTARTS
 pod/keycloak-xxx                       1/1     Running     0
 pod/keycloak-setup-xxx                 0/1     Completed   0
+pod/nginx-xxx                          1/1     Running     0
+pod/orderpay-web-xxx                   1/1     Running     0
 pod/orderpay-webapi-xxx                1/1     Running     0
 pod/orderpay-webapi-yyy                1/1     Running     0
 pod/postgres-xxx                       1/1     Running     0
@@ -184,10 +217,12 @@ pod/seq-xxx                            1/1     Running     0
 pod/sqlserver-xxx                      1/1     Running     0
 
 NAME                      TYPE           CLUSTER-IP     EXTERNAL-IP
-service/keycloak          LoadBalancer   10.96.x.x      <pending>
-service/orderpay-webapi   LoadBalancer   10.96.x.x      <pending>
+service/keycloak          LoadBalancer   10.96.x.x      127.0.0.1   ← port 8085 (admin)
+service/nginx             LoadBalancer   10.96.x.x      127.0.0.1   ← port 80 (main entry)
+service/orderpay-web      ClusterIP      10.96.x.x      <none>
+service/orderpay-webapi   ClusterIP      10.96.x.x      <none>
 service/postgres          ClusterIP      10.96.x.x      <none>
-service/seq               LoadBalancer   10.96.x.x      <pending>
+service/seq               LoadBalancer   10.96.x.x      127.0.0.1   ← port 8082 (logs)
 service/sqlserver         ClusterIP      10.96.x.x      <none>
 ```
 
@@ -326,15 +361,22 @@ minikube delete
 ## Architecture Overview
 
 ```
-Internet
+Browser (minikube tunnel → 127.0.0.1)
     ↓
-LoadBalancer (minikube tunnel)
+Service: nginx  LoadBalancer :80
     ↓
-Service: orderpay-webapi (port 80)
-    ↓
-Pod: orderpay-webapi (x2 replicas, port 8080)
-    ├── → Service: sqlserver (port 1433) → Pod: sqlserver
-    └── → Service: seq (port 5341)       → Pod: seq
+Pod: nginx (reverse proxy)
+    ├── /             → Service: orderpay-web  ClusterIP :3000
+    │                       └── Pod: orderpay-web (Next.js)
+    ├── /api/         → Service: orderpay-webapi  ClusterIP :8080
+    │   /swagger/          └── Pod: orderpay-webapi (x2)
+    │                               ├── → Service: sqlserver ClusterIP :1433
+    │                               └── → Service: seq       ClusterIP :5341
+    └── /realms/      → Service: keycloak  LoadBalancer :8085
+        /admin/              └── Pod: keycloak
+                                     └── → Service: postgres  ClusterIP :5432
+
+Service: seq  LoadBalancer :8082  ← direct log viewer access
 ```
 
 ---

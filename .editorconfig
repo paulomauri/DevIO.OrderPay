@@ -267,8 +267,8 @@ dotnet_diagnostic.CA1819.severity                               = none     # arr
 dotnet_diagnostic.CA1024.severity                               = none     # GetX methods intentional in service interfaces
 dotnet_diagnostic.CA2234.severity                               = none     # string URI parameters over System.Uri
 
-# IDE0160: Convert to block scoped namespace
-dotnet_diagnostic.IDE0160.severity = none
+dotnet_diagnostic.CA1707.severity                               = none     # CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.IDE0160.severity                              = none     # IDE0160: Convert to block scoped namespace
 
 # ── Qualification & predefined type keywords ──────────────────────────────────
 

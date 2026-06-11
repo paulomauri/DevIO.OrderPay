@@ -9,6 +9,15 @@
     <File Path="k8s/keycloak/service.yaml" />
     <File Path="k8s/keycloak/setup-job.yaml" />
   </Folder>
+  <Folder Name="/k8s/frontend/">
+    <File Path="k8s/frontend/deployment.yaml" />
+    <File Path="k8s/frontend/service.yaml" />
+  </Folder>
+  <Folder Name="/k8s/nginx/">
+    <File Path="k8s/nginx/configmap.yaml" />
+    <File Path="k8s/nginx/deployment.yaml" />
+    <File Path="k8s/nginx/service.yaml" />
+  </Folder>
   <Folder Name="/k8s/postgres/">
     <File Path="k8s/postgres/deployment.yaml" />
     <File Path="k8s/postgres/service.yaml" />
@@ -65,6 +74,14 @@
     <File Path="orderpay-web/src/components/ui/Card.tsx" />
     <File Path="orderpay-web/src/components/ui/Table.tsx" />
     <File Path="orderpay-web/src/components/ui/Modal.tsx" />
+    <File Path="orderpay-web/src/components/layout/AppShell.tsx" />
+    <File Path="orderpay-web/src/components/layout/Sidebar.tsx" />
+    <File Path="orderpay-web/src/components/layout/Header.tsx" />
+    <File Path="orderpay-web/src/app/(protected)/layout.tsx" />
+    <File Path="orderpay-web/src/app/(protected)/dashboard/page.tsx" />
+    <File Path="orderpay-web/src/app/(protected)/customers/page.tsx" />
+    <File Path="orderpay-web/src/app/(protected)/products/page.tsx" />
+    <File Path="orderpay-web/src/app/(protected)/orders/page.tsx" />
   </Folder>
   <Folder Name="/keycloak/">
     <File Path="keycloak/realm-export.json" />

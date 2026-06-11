@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: orderpay
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        # Kubernetes cluster DNS — defers upstream resolution to request time
+        resolver 10.96.0.10 valid=10s ipv6=off;
+
+        # ── Keycloak → Auth server ───────────────────────────────────
+        location /realms/ {
+            set $upstream           http://keycloak:8085;
+            proxy_pass              $upstream;
+            proxy_http_version      1.1;
+            proxy_redirect          off;
+            proxy_set_header        Host              $host;
+            proxy_set_header        X-Real-IP         $remote_addr;
+            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_buffer_size       128k;
+            proxy_buffers           4 256k;
+            proxy_busy_buffers_size 256k;
+        }
+
+        location /admin/ {
+            set $upstream           http://keycloak:8085;
+            proxy_pass              $upstream;
+            proxy_http_version      1.1;
+            proxy_redirect          off;
+            proxy_set_header        Host              $host;
+            proxy_set_header        X-Real-IP         $remote_addr;
+            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_buffer_size       128k;
+            proxy_buffers           4 256k;
+            proxy_busy_buffers_size 256k;
+        }
+
+        location /resources/ {
+            set $upstream      http://keycloak:8085;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_redirect     off;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+
+        location /js/ {
+            set $upstream      http://keycloak:8085;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_redirect     off;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+
+        location /kc/ {
+            set $upstream      http://keycloak:8085;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_redirect     off;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+
+        # ── API → WebApi ────────────────────────────────────────────
+        location /api/ {
+            set $upstream      http://orderpay-webapi:8080;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+
+        # ── Swagger → WebApi ────────────────────────────────────────
+        location /swagger/ {
+            set $upstream      http://orderpay-webapi:8080;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+
+        # ── Frontend → Next.js ──────────────────────────────────────
+        location / {
+            set $upstream      http://orderpay-web:3000;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+            proxy_set_header   Upgrade           $http_upgrade;
+            proxy_set_header   Connection        "upgrade";
+        }
+    }

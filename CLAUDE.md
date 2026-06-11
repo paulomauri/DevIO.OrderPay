@@ -150,6 +150,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 6 — Frontend (React + Next.js + Redux) | pending |
 | 7 — Payment Bounded Context + Idempotency | pending |
 | 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
+| 9 — Logistics Webhook (inbound status updates) | pending |
 
 ## Phase 7 — Payment Bounded Context (pending)
 
@@ -199,3 +200,40 @@ New bounded context `DevIO.OrderPay.Payment` with its own domain, application, a
 **Idempotency guarantee:** every downstream side effect runs at-least-once but is safe to repeat — dedup by `OutboxMessage.Id` against `ProcessedOutboxMessage`.
 
 **End-to-end guarantee:** Phase 7 (at-most-once charge) + Phase 8 (at-least-once + idempotent consumers via RabbitMQ/MassTransit) = effectively-once semantics across the payment and order pipeline.
+
+## Phase 9 — Logistics Webhook (pending)
+
+Inbound webhook endpoint called by a logistics company to push shipment status changes into the order pipeline.
+
+**Endpoint**
+- `POST /api/v1/webhook/logistics` — outside Keycloak auth policy; verified via HMAC-SHA256 `X-Signature` header using a shared secret
+- Returns `202 Accepted` immediately; never exposes internal errors to the caller
+
+**DTO**
+- `LogisticsWebhookRequest` — `EventId` (string), `OrderId` (Guid), `LogisticsStatus` (string), `OccurredAt` (DateTimeOffset)
+
+**Status mapping** (`LogisticsStatus → OrderStatus`)
+```
+IN_TRANSIT          → Shipped
+OUT_FOR_DELIVERY    → Shipped
+DELIVERED           → Delivered
+FAILED              → CancellationRequested
+RETURNED            → Refunding
+```
+
+**Idempotency**
+- `ProcessedWebhookEvent` table — stores consumed `EventId` values
+- Before processing: check if `EventId` already exists → skip if so
+- Written in the same EF Core transaction as the `Order` status update
+
+**Application layer**
+- `ILogisticsWebhookService` + `LogisticsWebhookService` in `Order.Application`
+- Calls `Order.UpdateStatus(mappedStatus)` — Phase 8 state machine validates the transition; illegal moves (`Delivered → Pending`) throw `InvalidOrderTransitionException` and return `422 Unprocessable Entity`
+
+**Security**
+- HMAC-SHA256 signature: `X-Signature: sha256=<hex>` computed over the raw request body with the shared secret stored in `appsettings` / K8s secret
+- IP allowlist optional — configure at nginx level for the logistics company's CIDR
+
+**Dependencies**
+- Requires Phase 8 (`Order.UpdateStatus` state machine) to validate transitions
+- Reuses Outbox pattern from Phase 8 — status change raises `OrderShippedEvent` / domain event as normal
