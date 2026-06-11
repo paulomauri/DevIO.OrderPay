@@ -138,7 +138,7 @@ npm run lint
 | 4 — API layer (Axios + React Query) | ✅ Done |
 | 5 — Redux Toolkit (uiSlice + cartSlice) | ✅ Done |
 | 6 — Pages + layout | pending |
-| 7 — Components (ui primitives) | pending |
+| 7 — Components (ui primitives) | ✅ Done |
 | 8 — Forms + validation | pending |
 | 9 — Error handling + loading states | pending |
 | 10 — Tests | pending |

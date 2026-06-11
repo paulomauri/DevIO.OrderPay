@@ -56,6 +56,15 @@
     <File Path="orderpay-web/src/types/order.ts" />
     <File Path="orderpay-web/src/app/layout.tsx" />
     <File Path="orderpay-web/src/app/page.tsx" />
+    <File Path="orderpay-web/src/hooks/useRole.ts" />
+    <File Path="orderpay-web/src/components/ui/AdminOnly.tsx" />
+    <File Path="orderpay-web/src/components/ui/Button.tsx" />
+    <File Path="orderpay-web/src/components/ui/Spinner.tsx" />
+    <File Path="orderpay-web/src/components/ui/Input.tsx" />
+    <File Path="orderpay-web/src/components/ui/Badge.tsx" />
+    <File Path="orderpay-web/src/components/ui/Card.tsx" />
+    <File Path="orderpay-web/src/components/ui/Table.tsx" />
+    <File Path="orderpay-web/src/components/ui/Modal.tsx" />
   </Folder>
   <Folder Name="/keycloak/">
     <File Path="keycloak/realm-export.json" />
