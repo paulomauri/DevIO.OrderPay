@@ -137,7 +137,7 @@ npm run lint
 | 3 — Authentication (NextAuth + Keycloak) | ✅ Done |
 | 4 — API layer (Axios + React Query) | ✅ Done |
 | 5 — Redux Toolkit (uiSlice + cartSlice) | ✅ Done |
-| 6 — Pages + layout | pending |
+| 6 — Pages + layout | ✅ Done |
 | 7 — Components (ui primitives) | ✅ Done |
 | 8 — Forms + validation | pending |
 | 9 — Error handling + loading states | pending |
