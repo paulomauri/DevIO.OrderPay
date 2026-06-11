@@ -215,11 +215,17 @@ else
             "directAccessGrantsEnabled": true,
             "protocol": "openid-connect",
             "redirectUris": [
+                "http://api.localhost/*",
+                "http://www.localhost/*",
+                "http://localhost/*",
                 "http://localhost:8080/*",
                 "http://localhost:5208/*",
                 "http://127.0.0.1/*"
             ],
             "webOrigins": [
+                "http://api.localhost",
+                "http://www.localhost",
+                "http://localhost",
                 "http://localhost:8080",
                 "http://localhost:5208",
                 "http://127.0.0.1"
@@ -316,7 +322,74 @@ create_user() {
     echo "✅  User '${EMAIL}' created with roles: ${ROLES}"
 }
 
-# ---- Step 6: Audience mapper — orderpay-swagger → orderpay-webapi ----
+# ---- Step 6: orderpay-web client (Next.js frontend — confidential) ----
+echo "➡️  Checking client 'orderpay-web'..."
+
+CLIENT_EXISTS=$(curl -s \
+    --connect-timeout 10 \
+    --max-time 30 \
+    -H "$AUTH" \
+    "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=orderpay-web")
+
+if echo "$CLIENT_EXISTS" | jq -e 'length > 0' > /dev/null; then
+
+    echo "ℹ️   Client 'orderpay-web' already exists."
+
+else
+
+    echo "➕  Creating client 'orderpay-web'..."
+    WEB_SECRET="${KEYCLOAK_WEB_CLIENT_SECRET:-orderpay-web-dev-secret}"
+
+    RESULT=$(curl -s \
+        --connect-timeout 10 \
+        --max-time 30 \
+        -o /tmp/web-client-response.txt \
+        -w "%{http_code}" \
+        -X POST \
+        -H "$AUTH" \
+        -H "$CT" \
+        -d "{
+            \"clientId\": \"orderpay-web\",
+            \"name\": \"OrderPay Web Frontend\",
+            \"enabled\": true,
+            \"publicClient\": false,
+            \"bearerOnly\": false,
+            \"standardFlowEnabled\": true,
+            \"directAccessGrantsEnabled\": false,
+            \"protocol\": \"openid-connect\",
+            \"secret\": \"${WEB_SECRET}\",
+            \"redirectUris\": [
+                \"http://www.localhost/api/auth/callback/keycloak\",
+                \"http://localhost/api/auth/callback/keycloak\",
+                \"http://localhost:3000/api/auth/callback/keycloak\"
+            ],
+            \"webOrigins\": [
+                \"http://www.localhost\",
+                \"http://localhost\",
+                \"http://localhost:3000\"
+            ]
+        }" \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/clients")
+
+    if [ "$RESULT" = "201" ]; then
+
+        echo "✅  Client 'orderpay-web' created."
+
+    else
+
+        echo "❌  Failed to create client 'orderpay-web'"
+        echo ""
+        echo "HTTP STATUS: $RESULT"
+        echo "RESPONSE:"
+        cat /tmp/web-client-response.txt
+        exit 1
+
+    fi
+fi
+
+echo ""
+
+# ---- Step 7: Audience mapper — orderpay-swagger → orderpay-webapi ----
 echo "🗺️   Configuring audience mapper for 'orderpay-swagger'..."
 
 SWAGGER_UUID=$(curl -s \
@@ -354,7 +427,7 @@ else
 fi
 echo ""
 
-# ---- Step 7: Create users ----
+# ---- Step 8: Create users ----
 echo "👥  Creating users..."
 echo ""
 create_user "admin@orderpay.com" "Mauri@22" "Admin" "OrderPay" "admin,customer"

@@ -47,11 +47,17 @@
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
       "redirectUris": [
+        "http://api.localhost/*",
+        "http://www.localhost/*",
+        "http://localhost/*",
         "http://localhost:8080/*",
         "http://localhost:5208/*",
         "http://127.0.0.1/*"
       ],
       "webOrigins": [
+        "http://api.localhost",
+        "http://www.localhost",
+        "http://localhost",
         "http://localhost:8080",
         "http://localhost:5208",
         "http://127.0.0.1"

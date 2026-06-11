@@ -11,19 +11,21 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080        # ← forces HTTP only, no HTTPS
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=OrderPayDb;User Id=sa;Password=Mauri@22;TrustServerCertificate=True;
-      - Keycloak__Authority=http://localhost:8085/realms/orderpay
+      - Keycloak__Authority=http://id.localhost/realms/orderpay
       - Keycloak__Audience=orderpay-webapi
       - Keycloak__MetadataAddress=http://keycloak:8085/realms/orderpay/.well-known/openid-configuration
-      - Keycloak__ValidIssuer=http://localhost:8085/realms/orderpay
+      - Keycloak__ValidIssuer=http://id.localhost/realms/orderpay
       - Keycloak__RequireHttpsMetadata=false
-    depends_on:                          
+    depends_on:
       sqlserver:
         condition: service_healthy
       keycloak:
         condition: service_healthy
     ports:
       - "8080:8080"
-    networks:                           
+    extra_hosts:
+      - "id.localhost:host-gateway"
+    networks:
       - app_network
 
   # ----------------------------------------------------------
@@ -38,14 +40,16 @@ services:
     container_name: orderpay-web
     restart: unless-stopped
     environment:
-      - NEXTAUTH_URL=http://localhost
+      - NEXTAUTH_URL=http://www.localhost
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-orderpay-web}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      - KEYCLOAK_ISSUER=http://localhost:8085/realms/orderpay
+      - KEYCLOAK_ISSUER=http://id.localhost/realms/orderpay
     depends_on:
       keycloak:
         condition: service_healthy
+    extra_hosts:
+      - "id.localhost:host-gateway"
     networks:
       - app_network
 
@@ -64,6 +68,8 @@ services:
       - orderpay-web
       - devio.orderpay.webapi
       - keycloak
+    extra_hosts:
+      - "id.localhost:host-gateway"
     networks:
       - app_network
 
@@ -151,7 +157,7 @@ services:
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: "${POSTGRES_PASSWORD:-Mauri@22}"
 
-      KC_HOSTNAME: localhost
+      KC_HOSTNAME: id.localhost
       KC_HOSTNAME_PORT: 80
       KC_HTTP_PORT: 8085
 
@@ -188,6 +194,8 @@ services:
     image: alpine:latest
     container_name: keycloak-setup
     restart: "no"                        # ← runs once and exits
+    environment:
+      - KEYCLOAK_WEB_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
     volumes:
       - ./keycloak:/scripts
     entrypoint:
