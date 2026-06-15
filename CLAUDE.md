@@ -163,11 +163,142 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
-| 6 — Frontend (React + Next.js + Redux) | 🔄 Steps 1–7 done / Steps 8–10 pending |
+| 6 — Frontend (React + Next.js + Redux) | 🔄 Steps 1–7 done / Steps 8–10B pending |
 | 7 — Payment Bounded Context + Idempotency | pending |
 | 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
-| 9 — Logistics Webhook (inbound status updates) | pending |
+| 9 — Logistics Integration (outbound dispatch + inbound webhook) | pending |
 | 10 — Datadog (cloud observability) | pending |
+
+## Phase 6 — Frontend steps
+
+| Step | Description | Status |
+|---|---|---|
+| 1 | Project setup — Next.js 15, Styled Components v6, TypeScript, Dockerfile | ✅ Done |
+| 2 | Theme + Global styles — `theme.ts`, `GlobalStyle.ts`, `styled.d.ts` | ✅ Done |
+| 3 | Auth — NextAuth.js v4 + Keycloak OIDC, session, protected routes | ✅ Done |
+| 4 | API layer — Axios instance (JWT interceptor) + React Query, typed service files | ✅ Done |
+| 5 | Redux Toolkit — `uiSlice` (modals, sidebar) + `cartSlice` (draft order) | ✅ Done |
+| 6 | Pages + layout — AppShell, Sidebar, Header, Dashboard, Customers, Products, Orders | ✅ Done |
+| 7 | UI primitives — Button, Input, Badge, Card, Table, Modal, Spinner, AdminOnly | ✅ Done |
+| 8 | Forms + validation — react-hook-form + zod, ModalManager, CRUD modals, mutations | pending |
+| 9 | Error handling + loading states — toasts, skeletons, empty states, error boundary | pending |
+| 10-A | Unit/component tests — Jest + React Testing Library | pending |
+| 10-B | E2E tests — Playwright (`tests/e2e/` at solution root) | pending |
+
+## Phase 6 — Step 8: Forms + validation (pending)
+
+**Install**
+- `react-hook-form`, `zod`, `@hookform/resolvers`
+
+**Components**
+- `ModalManager` — reads Redux `uiSlice.activeModal`, renders the correct modal
+- `CustomerFormModal` — create + edit: name, CPF, email, street, city, zip
+- `ProductFormModal` — create + edit: name, description, price, stock
+- `CreateOrderModal` — select customer + add items from product list, submit
+- `UpdateStatusModal` — admin selects new status from allowed transitions
+- `ConfirmDeleteModal` — generic confirmation with entity name
+
+**Pattern per modal**
+- `useForm` with `zodResolver` for typed validation
+- `useMutation` + `queryClient.invalidateQueries` on success
+- Field-level error messages via `Input` `error` prop
+
+## Phase 6 — Step 9: Error handling + loading states (pending)
+
+- `ErrorBoundary` wraps `AppShell` — catches render errors, shows fallback UI
+- `toast()` helper — called in mutation `onSuccess` / `onError`
+- `TableSkeleton` — animated placeholder rows while `isLoading`
+- `EmptyState` — shown when query returns empty array
+- API 401 → `signOut()` via Axios response interceptor
+
+## Phase 6 — Step 10-A: Unit tests — Jest + RTL (pending)
+
+**Setup:** `jest.config.ts`, `jest.setup.ts` inside `orderpay-web/`; packages: `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
+
+**Test targets**
+- `Button` — renders variants, shows Spinner when `loading`, disabled when `loading`
+- `Badge` / `OrderStatusBadge` — correct color per status
+- `AdminOnly` — hides children when `useIsAdmin()` returns false
+- `useIsAdmin` — returns true/false based on mocked session roles
+- `CustomersPage` — renders table rows from mocked React Query data
+
+## Phase 6 — Step 10-B: E2E tests — Playwright (pending)
+
+Separate project at solution root — tests the full running stack (browser → nginx → Next.js → WebApi → Keycloak → SQL Server).
+
+**Location**
+```
+tests/
+  DevIO.OrderPay.Tests/        ← existing .NET xUnit tests
+  e2e/
+    package.json
+    playwright.config.ts
+    specs/
+      auth.spec.ts             ← login, redirect, session
+      customers.spec.ts        ← CRUD + role gating
+      products.spec.ts         ← CRUD + role gating
+      orders.spec.ts           ← create order, status badge
+    fixtures/
+      auth.fixture.ts          ← reusable login helpers (admin + customer sessions)
+      .auth-admin.json         ← saved browser storage state (gitignored)
+      .auth-customer.json      ← saved browser storage state (gitignored)
+```
+
+**playwright.config.ts**
+```ts
+export default defineConfig({
+  baseURL: "http://www.localhost",
+  use: { headless: true, screenshot: "only-on-failure" },
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  retries: 1,
+});
+```
+
+**Covered scenarios**
+| Spec | Scenario |
+|---|---|
+| `auth` | Admin logs in via Keycloak → lands on `/dashboard` |
+| `auth` | Unauthenticated user redirected to Keycloak login |
+| `customers` | Admin creates a customer → row appears in table |
+| `customers` | Customer role sees table but no Create / Delete buttons (`AdminOnly`) |
+| `products` | Admin creates + deletes a product |
+| `orders` | Admin creates an order → appears with `Pending` badge |
+| `orders` | Admin updates status → badge color changes |
+
+**Auth fixture** — stores browser storage state after login so subsequent tests skip the Keycloak login form:
+```ts
+// fixtures/auth.fixture.ts
+export async function saveAdminSession(browser: Browser) {
+  const page = await browser.newPage();
+  await page.goto("/");
+  await page.fill("#username", "admin@orderpay.com");
+  await page.fill("#password", "Mauri@22");
+  await page.click("[type=submit]");
+  await page.context().storageState({ path: "fixtures/.auth-admin.json" });
+  await page.close();
+}
+```
+
+**Run commands**
+```bash
+cd tests/e2e
+npm install
+npx playwright install chromium
+npx playwright test              # headless (requires docker compose up -d)
+npx playwright test --ui         # interactive UI mode
+npx playwright show-report       # HTML report after run
+```
+
+**CI integration** — `playwright` job in `.github/workflows/ci.yml`:
+1. `docker compose up -d` (full stack)
+2. Wait for `http://www.localhost` to be healthy
+3. `npx playwright test`
+4. Upload HTML report as artifact on failure
+
+**Dependencies**
+- Requires full stack running: `docker compose up -d`
+- Keycloak must have `admin@orderpay.com` + `user@orderpay.com` (created by `setup.sh`)
+- `tests/e2e/fixtures/.auth-*.json` are gitignored (generated at test runtime)
 
 ## Phase 7 — Payment Bounded Context (pending)
 

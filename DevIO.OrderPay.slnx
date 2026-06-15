@@ -82,6 +82,16 @@
     <File Path="orderpay-web/src/app/(protected)/customers/page.tsx" />
     <File Path="orderpay-web/src/app/(protected)/products/page.tsx" />
     <File Path="orderpay-web/src/app/(protected)/orders/page.tsx" />
+    <File Path="orderpay-web/src/components/ui/Select.tsx" />
+    <File Path="orderpay-web/src/components/ui/ConfirmDeleteModal.tsx" />
+    <File Path="orderpay-web/src/components/ModalManager.tsx" />
+    <File Path="orderpay-web/src/features/customers/CustomerFormModal.tsx" />
+    <File Path="orderpay-web/src/features/products/ProductFormModal.tsx" />
+    <File Path="orderpay-web/src/features/orders/CreateOrderModal.tsx" />
+    <File Path="orderpay-web/src/features/orders/UpdateStatusModal.tsx" />
+    <File Path="orderpay-web/src/components/ui/ErrorBoundary.tsx" />
+    <File Path="orderpay-web/src/components/ui/TableSkeleton.tsx" />
+    <File Path="orderpay-web/src/components/ui/EmptyState.tsx" />
   </Folder>
   <Folder Name="/keycloak/">
     <File Path="keycloak/realm-export.json" />

@@ -427,6 +427,44 @@ else
 fi
 echo ""
 
+# ---- Step 7b: Audience mapper — orderpay-web → orderpay-webapi ----
+echo "🗺️   Configuring audience mapper for 'orderpay-web'..."
+
+WEB_UUID=$(curl -s \
+    --connect-timeout 10 \
+    --max-time 30 \
+    -H "$AUTH" \
+    "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=orderpay-web" \
+    | jq -r '.[0].id')
+
+WEB_MAPPER_EXISTS=$(curl -s \
+    --connect-timeout 10 \
+    --max-time 30 \
+    -H "$AUTH" \
+    "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${WEB_UUID}/protocol-mappers/models" \
+    | jq '[.[] | select(.name == "orderpay-webapi-audience")] | length')
+
+if [ "$WEB_MAPPER_EXISTS" -gt 0 ]; then
+    echo "ℹ️   Audience mapper already exists."
+else
+    curl -sf -X POST \
+        -H "$AUTH" -H "$CT" \
+        -d '{
+            "name": "orderpay-webapi-audience",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+                "included.client.audience": "orderpay-webapi",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+            }
+        }' \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${WEB_UUID}/protocol-mappers/models"
+    echo "✅  Audience mapper added."
+fi
+echo ""
+
 # ---- Step 8: Create users ----
 echo "👥  Creating users..."
 echo ""

@@ -8,20 +8,9 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TableWrapper, Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import AdminOnly from "@/components/ui/AdminOnly";
-import Spinner from "@/components/ui/Spinner";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import EmptyState from "@/components/ui/EmptyState";
 import { customersService } from "@/services/customers";
-
-const Center = styled.div`
-  display:         flex;
-  justify-content: center;
-  padding:         ${({ theme }) => theme.spacing.xxl};
-`;
-
-const Empty = styled.p`
-  text-align: center;
-  color:      ${({ theme }) => theme.colors.textMuted};
-  padding:    ${({ theme }) => theme.spacing.xxl};
-`;
 
 const ActionsCell = styled(Td)`
   display:     flex;
@@ -36,6 +25,8 @@ export default function CustomersPage() {
     queryFn:  customersService.getAll,
   });
 
+  const isEmpty = !isLoading && (!customers || customers.length === 0);
+
   return (
     <Card>
       <CardHeader>
@@ -47,15 +38,9 @@ export default function CustomersPage() {
         </AdminOnly>
       </CardHeader>
 
-      {isLoading && (
-        <Center><Spinner /></Center>
-      )}
+      {isEmpty && <EmptyState message="No customers found." />}
 
-      {!isLoading && (!customers || customers.length === 0) && (
-        <Empty>No customers found.</Empty>
-      )}
-
-      {!isLoading && customers && customers.length > 0 && (
+      {!isEmpty && (
         <TableWrapper>
           <Table>
             <Thead>
@@ -67,31 +52,35 @@ export default function CustomersPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {customers.map((c) => (
-                <Tr key={c.id}>
-                  <Td>{c.name}</Td>
-                  <Td>{c.email}</Td>
-                  <Td>{c.mobile}</Td>
-                  <AdminOnly>
-                    <ActionsCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dispatch(openModal({ modal: "editCustomer", payload: c.id }))}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => dispatch(openModal({ modal: "confirmDelete", payload: c.id }))}
-                      >
-                        Delete
-                      </Button>
-                    </ActionsCell>
-                  </AdminOnly>
-                </Tr>
-              ))}
+              {isLoading ? (
+                <TableSkeleton cols={4} />
+              ) : (
+                customers!.map((c) => (
+                  <Tr key={c.id}>
+                    <Td>{c.name}</Td>
+                    <Td>{c.email}</Td>
+                    <Td>{c.mobile}</Td>
+                    <AdminOnly>
+                      <ActionsCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => dispatch(openModal({ modal: "editCustomer", payload: c.id }))}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => dispatch(openModal({ modal: "confirmDelete", payload: "customer:" + c.id }))}
+                        >
+                          Delete
+                        </Button>
+                      </ActionsCell>
+                    </AdminOnly>
+                  </Tr>
+                ))
+              )}
             </Tbody>
           </Table>
         </TableWrapper>

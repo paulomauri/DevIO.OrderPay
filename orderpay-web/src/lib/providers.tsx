@@ -9,6 +9,7 @@ import { store } from "@/store";
 import theme from "@/styles/theme";
 import GlobalStyle from "@/styles/GlobalStyle";
 import StyledComponentsRegistry from "./registry";
+import { Toaster } from "sonner";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -28,6 +29,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <ThemeProvider theme={theme}>
               <GlobalStyle />
               {children}
+              <Toaster theme="light" richColors position="top-right" />
             </ThemeProvider>
           </QueryClientProvider>
         </ReduxProvider>

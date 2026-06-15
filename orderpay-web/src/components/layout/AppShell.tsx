@@ -3,6 +3,7 @@
 import styled from "styled-components";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import ModalManager from "@/components/ModalManager";
 
 const Shell = styled.div`
   display:    flex;
@@ -32,6 +33,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <Header />
         <Content>{children}</Content>
       </RightPane>
+      <ModalManager />
     </Shell>
   );
 }
