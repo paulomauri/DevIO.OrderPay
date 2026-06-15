@@ -8,20 +8,9 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TableWrapper, Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import AdminOnly from "@/components/ui/AdminOnly";
-import Spinner from "@/components/ui/Spinner";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import EmptyState from "@/components/ui/EmptyState";
 import { productsService } from "@/services/products";
-
-const Center = styled.div`
-  display:         flex;
-  justify-content: center;
-  padding:         ${({ theme }) => theme.spacing.xxl};
-`;
-
-const Empty = styled.p`
-  text-align: center;
-  color:      ${({ theme }) => theme.colors.textMuted};
-  padding:    ${({ theme }) => theme.spacing.xxl};
-`;
 
 const ActionsCell = styled(Td)`
   display:     flex;
@@ -30,10 +19,10 @@ const ActionsCell = styled(Td)`
 `;
 
 const Description = styled.span`
-  display:     block;
-  max-width:   280px;
-  overflow:    hidden;
-  white-space: nowrap;
+  display:       block;
+  max-width:     280px;
+  overflow:      hidden;
+  white-space:   nowrap;
   text-overflow: ellipsis;
 `;
 
@@ -43,6 +32,8 @@ export default function ProductsPage() {
     queryKey: ["products"],
     queryFn:  productsService.getAll,
   });
+
+  const isEmpty = !isLoading && (!products || products.length === 0);
 
   return (
     <Card>
@@ -55,15 +46,9 @@ export default function ProductsPage() {
         </AdminOnly>
       </CardHeader>
 
-      {isLoading && (
-        <Center><Spinner /></Center>
-      )}
+      {isEmpty && <EmptyState message="No products found." icon="📦" />}
 
-      {!isLoading && (!products || products.length === 0) && (
-        <Empty>No products found.</Empty>
-      )}
-
-      {!isLoading && products && products.length > 0 && (
+      {!isEmpty && (
         <TableWrapper>
           <Table>
             <Thead>
@@ -75,31 +60,35 @@ export default function ProductsPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {products.map((p) => (
-                <Tr key={p.id}>
-                  <Td>{p.name}</Td>
-                  <Td>{p.sku}</Td>
-                  <Td><Description title={p.description}>{p.description}</Description></Td>
-                  <AdminOnly>
-                    <ActionsCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dispatch(openModal({ modal: "editProduct", payload: p.id }))}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => dispatch(openModal({ modal: "confirmDelete", payload: p.id }))}
-                      >
-                        Delete
-                      </Button>
-                    </ActionsCell>
-                  </AdminOnly>
-                </Tr>
-              ))}
+              {isLoading ? (
+                <TableSkeleton cols={4} />
+              ) : (
+                products!.map((p) => (
+                  <Tr key={p.id}>
+                    <Td>{p.name}</Td>
+                    <Td>{p.sku}</Td>
+                    <Td><Description title={p.description}>{p.description}</Description></Td>
+                    <AdminOnly>
+                      <ActionsCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => dispatch(openModal({ modal: "editProduct", payload: p.id }))}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => dispatch(openModal({ modal: "confirmDelete", payload: "product:" + p.id }))}
+                        >
+                          Delete
+                        </Button>
+                      </ActionsCell>
+                    </AdminOnly>
+                  </Tr>
+                ))
+              )}
             </Tbody>
           </Table>
         </TableWrapper>

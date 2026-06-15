@@ -125,7 +125,7 @@ npm run lint
 ## Build notes
 
 - Styled Components compiler enabled via `next.config.ts` (`compiler.styledComponents: true`)
-- `proxy.ts` replaces `middleware.ts` — renamed in Next.js 16
+- `proxy.ts` at `src/proxy.ts` — Next.js 16 renamed middleware from `middleware.ts` to `proxy.ts`; exports `proxy` function + `config.matcher`
 - SSR styles collected via `src/lib/registry.tsx` (required for Styled Components v6 + App Router)
 
 ## Phase 6 steps

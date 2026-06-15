@@ -71,6 +71,9 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
+// ── CORS ───────────────────────────────────────────────────
+builder.AddCorsPolicy();
+
 // ── Authentication — Keycloak JWT ──────────────────────────
 builder.AddKeycloakAuthentication();
 
@@ -152,6 +155,7 @@ app.MapHealthChecks("/health");
 
 //app.UseHttpsRedirection();
 
+app.UseCors(CorsExtensions.PolicyName);
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();

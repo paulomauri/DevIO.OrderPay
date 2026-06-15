@@ -9,20 +9,9 @@ import { TableWrapper, Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/T
 import { OrderStatusBadge } from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import AdminOnly from "@/components/ui/AdminOnly";
-import Spinner from "@/components/ui/Spinner";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import EmptyState from "@/components/ui/EmptyState";
 import { ordersService } from "@/services/orders";
-
-const Center = styled.div`
-  display:         flex;
-  justify-content: center;
-  padding:         ${({ theme }) => theme.spacing.xxl};
-`;
-
-const Empty = styled.p`
-  text-align: center;
-  color:      ${({ theme }) => theme.colors.textMuted};
-  padding:    ${({ theme }) => theme.spacing.xxl};
-`;
 
 const ActionsCell = styled(Td)`
   display:     flex;
@@ -49,6 +38,8 @@ export default function OrdersPage() {
     queryFn:  ordersService.getAll,
   });
 
+  const isEmpty = !isLoading && (!orders || orders.length === 0);
+
   return (
     <Card>
       <CardHeader>
@@ -58,15 +49,9 @@ export default function OrdersPage() {
         </Button>
       </CardHeader>
 
-      {isLoading && (
-        <Center><Spinner /></Center>
-      )}
+      {isEmpty && <EmptyState message="No orders yet." icon="🛒" />}
 
-      {!isLoading && (!orders || orders.length === 0) && (
-        <Empty>No orders found.</Empty>
-      )}
-
-      {!isLoading && orders && orders.length > 0 && (
+      {!isEmpty && (
         <TableWrapper>
           <Table>
             <Thead>
@@ -79,34 +64,38 @@ export default function OrdersPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {orders.map((o) => (
-                <Tr key={o.id}>
-                  <Td><ShortId>{o.id.slice(0, 8)}…</ShortId></Td>
-                  <Td>{formatDate(o.orderDate)}</Td>
-                  <Td><OrderStatusBadge status={o.status} /></Td>
-                  <Td>${(o.totalPrice - o.totalDiscount).toFixed(2)}</Td>
-                  <ActionsCell>
-                    <AdminOnly>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dispatch(openModal({ modal: "updateStatus", payload: o.id }))}
-                      >
-                        Status
-                      </Button>
-                    </AdminOnly>
-                    <AdminOnly>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => dispatch(openModal({ modal: "confirmDelete", payload: o.id }))}
-                      >
-                        Delete
-                      </Button>
-                    </AdminOnly>
-                  </ActionsCell>
-                </Tr>
-              ))}
+              {isLoading ? (
+                <TableSkeleton cols={5} />
+              ) : (
+                orders!.map((o) => (
+                  <Tr key={o.id}>
+                    <Td><ShortId>{o.id.slice(0, 8)}…</ShortId></Td>
+                    <Td>{formatDate(o.orderDate)}</Td>
+                    <Td><OrderStatusBadge status={o.status} /></Td>
+                    <Td>${(o.totalPrice - o.totalDiscount).toFixed(2)}</Td>
+                    <ActionsCell>
+                      <AdminOnly>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => dispatch(openModal({ modal: "updateStatus", payload: o.id }))}
+                        >
+                          Status
+                        </Button>
+                      </AdminOnly>
+                      <AdminOnly>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => dispatch(openModal({ modal: "confirmDelete", payload: "order:" + o.id }))}
+                        >
+                          Delete
+                        </Button>
+                      </AdminOnly>
+                    </ActionsCell>
+                  </Tr>
+                ))
+              )}
             </Tbody>
           </Table>
         </TableWrapper>

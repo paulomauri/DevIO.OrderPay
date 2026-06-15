@@ -48,6 +48,7 @@ public static class KeycloakExtensions
                     ValidateIssuer           = true,
                     ValidIssuer              = validIssuer,
                     ValidateAudience         = true,
+                    ValidAudience            = audience,
                     ValidateLifetime         = true,
                     ValidateIssuerSigningKey = true,
                     RoleClaimType            = ClaimTypes.Role

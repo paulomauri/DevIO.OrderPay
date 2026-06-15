@@ -22,5 +22,6 @@ WORKDIR /src/src/Apps/DevIO.OrderPay.WebApi
 
 EXPOSE 8080
 
-# hot reload — rebuilds on any file change
-ENTRYPOINT ["dotnet", "watch", "run", "--no-launch-profile"]
+# dotnet watch polling crashes on WSL2 when host obj/bin dirs are mounted;
+# use dotnet run and rebuild the container after backend changes
+ENTRYPOINT ["dotnet", "run", "--no-launch-profile"]
