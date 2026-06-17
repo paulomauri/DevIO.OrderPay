@@ -128,6 +128,13 @@ npm run lint
 - `proxy.ts` at `src/proxy.ts` — Next.js 16 renamed middleware from `middleware.ts` to `proxy.ts`; exports `proxy` function + `config.matcher`
 - SSR styles collected via `src/lib/registry.tsx` (required for Styled Components v6 + App Router)
 
+## Test setup (Step 10-A)
+
+- `jest.config.ts` — `ts-jest` transform (CommonJS), `jsdom` env, `@/` path alias; `ts-node` required so Jest can read the TS config
+- `jest.setup.ts` — registers `@testing-library/jest-dom` + `jest-styled-components` matchers (`toHaveStyleRule` for asserting styled-components styles)
+- `src/test/test-utils.tsx` — `renderWithProviders` wraps Redux + React Query (retry off) + `ThemeProvider`; re-exports RTL
+- Tests colocated as `*.test.tsx`; `next-auth/react` `useSession` and service modules are mocked per-suite
+
 ## Phase 6 steps
 
 | Step | Status |
@@ -139,6 +146,7 @@ npm run lint
 | 5 — Redux Toolkit (uiSlice + cartSlice) | ✅ Done |
 | 6 — Pages + layout | ✅ Done |
 | 7 — Components (ui primitives) | ✅ Done |
-| 8 — Forms + validation | pending |
-| 9 — Error handling + loading states | pending |
-| 10 — Tests | pending |
+| 8 — Forms + validation | ✅ Done |
+| 9 — Error handling + loading states | ✅ Done |
+| 10-A — Unit/component tests (Jest + RTL) | ✅ Done |
+| 10-B — E2E tests (Playwright) | pending |

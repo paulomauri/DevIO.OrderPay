@@ -88,11 +88,6 @@ export default function ProductFormModal() {
             error={errors.description?.message}
             {...register("description")}
           />
-          {mutation.isError && (
-            <span style={{ color: "red", fontSize: "0.8rem" }}>
-              Failed to save product. Please try again.
-            </span>
-          )}
         </ModalBody>
         <ModalFooter>
           <Button type="button" variant="ghost" onClick={onClose}>

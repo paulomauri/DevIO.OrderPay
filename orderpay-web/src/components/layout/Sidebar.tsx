@@ -90,7 +90,7 @@ const NavLink = styled(Link)<{ $active: boolean }>`
   gap:         ${({ theme }) => theme.spacing.sm};
   padding:     ${({ theme }) => `10px ${theme.spacing.lg}`};
   color:       ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.textMuted)};
-  background:  ${({ theme, $active }) => ($active ? "rgba(37,99,235,0.08)" : "transparent")};
+  background:  ${({ $active }) => ($active ? "rgba(37,99,235,0.08)" : "transparent")};
   font-size:   ${({ theme }) => theme.typography.fontSize.sm};
   font-weight: ${({ theme, $active }) =>
     $active ? theme.typography.fontWeight.semibold : theme.typography.fontWeight.regular};

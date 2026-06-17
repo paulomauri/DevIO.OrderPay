@@ -25,9 +25,9 @@ const LABELS: Record<string, string> = {
 
 function resolveDeleteFn(entityType: string, id: string) {
   switch (entityType) {
-    case "customer": return () => customersService.delete(id);
-    case "product":  return () => productsService.delete(id);
-    case "order":    return () => ordersService.delete(id);
+    case "customer": return () => customersService.remove(id);
+    case "product":  return () => productsService.remove(id);
+    case "order":    return () => ordersService.remove(id);
     default:         throw new Error(`Unknown entity type: ${entityType}`);
   }
 }
@@ -70,11 +70,6 @@ export default function ConfirmDeleteModal() {
         <Message>
           Are you sure you want to delete this {label}? This action cannot be undone.
         </Message>
-        {mutation.isError && (
-          <span style={{ fontSize: "0.8rem", color: "red", marginTop: "8px", display: "block" }}>
-            Failed to delete. Please try again.
-          </span>
-        )}
       </ModalBody>
       <ModalFooter>
         <Button type="button" variant="ghost" onClick={onClose}>

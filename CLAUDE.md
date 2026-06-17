@@ -163,7 +163,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
-| 6 — Frontend (React + Next.js + Redux) | 🔄 Steps 1–7 done / Steps 8–10B pending |
+| 6 — Frontend (React + Next.js + Redux) | 🔄 Steps 1–10A done / Step 10B pending |
 | 7 — Payment Bounded Context + Idempotency | pending |
 | 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
 | 9 — Logistics Integration (outbound dispatch + inbound webhook) | pending |
@@ -180,9 +180,9 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 5 | Redux Toolkit — `uiSlice` (modals, sidebar) + `cartSlice` (draft order) | ✅ Done |
 | 6 | Pages + layout — AppShell, Sidebar, Header, Dashboard, Customers, Products, Orders | ✅ Done |
 | 7 | UI primitives — Button, Input, Badge, Card, Table, Modal, Spinner, AdminOnly | ✅ Done |
-| 8 | Forms + validation — react-hook-form + zod, ModalManager, CRUD modals, mutations | pending |
-| 9 | Error handling + loading states — toasts, skeletons, empty states, error boundary | pending |
-| 10-A | Unit/component tests — Jest + React Testing Library | pending |
+| 8 | Forms + validation — react-hook-form + zod, ModalManager, CRUD modals, mutations | ✅ Done |
+| 9 | Error handling + loading states — toasts, skeletons, empty states, error boundary | ✅ Done |
+| 10-A | Unit/component tests — Jest + React Testing Library | ✅ Done |
 | 10-B | E2E tests — Playwright (`tests/e2e/` at solution root) | pending |
 
 ## Phase 6 — Step 8: Forms + validation (pending)
@@ -279,7 +279,7 @@ export async function saveAdminSession(browser: Browser) {
 }
 ```
 
-**Run commands**
+**Run commands — local (host)**
 ```bash
 cd tests/e2e
 npm install
@@ -289,16 +289,53 @@ npx playwright test --ui         # interactive UI mode
 npx playwright show-report       # HTML report after run
 ```
 
+**Run commands — containerised (isolated)**
+```bash
+# start the full stack + playwright runner in one shot
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml \
+  up --exit-code-from playwright --abort-on-container-exit playwright
+```
+
+**Containerised setup — `docker-compose.e2e.yml`**
+
+The playwright service joins the same Docker network as nginx and resolves the three
+subdomains via network aliases on the nginx service — no host DNS changes needed.
+
+```yaml
+services:
+  nginx:
+    networks:
+      default:
+        aliases:
+          - www.localhost
+          - api.localhost
+          - id.localhost
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.54-noble
+    working_dir: /e2e
+    volumes:
+      - ./tests/e2e:/e2e
+    command: >
+      sh -c "npx wait-on http://www.localhost --timeout 60000 && npx playwright test"
+    depends_on:
+      - nginx
+      - webapi
+      - keycloak
+```
+
+`wait-on` waits for nginx to be reachable before running tests — needed because Keycloak
+takes ~30 s to finish booting even after the container reports healthy.
+`baseURL` in `playwright.config.ts` stays `http://www.localhost` — no env var needed.
+
 **CI integration** — `playwright` job in `.github/workflows/ci.yml`:
-1. `docker compose up -d` (full stack)
-2. Wait for `http://www.localhost` to be healthy
-3. `npx playwright test`
-4. Upload HTML report as artifact on failure
+1. `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up --exit-code-from playwright --abort-on-container-exit playwright`
+2. Upload HTML report (`playwright-report/`) as artifact on failure
 
 **Dependencies**
-- Requires full stack running: `docker compose up -d`
 - Keycloak must have `admin@orderpay.com` + `user@orderpay.com` (created by `setup.sh`)
 - `tests/e2e/fixtures/.auth-*.json` are gitignored (generated at test runtime)
+- `wait-on` npm package added to `tests/e2e/package.json` dev dependencies
 
 ## Phase 7 — Payment Bounded Context (pending)
 

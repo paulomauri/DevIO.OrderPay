@@ -98,11 +98,6 @@ export default function CustomerFormModal() {
             error={errors.mobile?.message}
             {...register("mobile")}
           />
-          {mutation.isError && (
-            <span style={{ color: "red", fontSize: "0.8rem" }}>
-              Failed to save customer. Please try again.
-            </span>
-          )}
         </ModalBody>
         <ModalFooter>
           <Button type="button" variant="ghost" onClick={onClose}>
