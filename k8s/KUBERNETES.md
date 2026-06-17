@@ -55,7 +55,7 @@ docker login
 ### 2. Build and tag WebApi image
 
 ```bash
-cd /mnt/c/projetos-estudo/DevIO.OrderPay
+cd /home/paulomauri/projects/DevIO.OrderPay
 
 docker build \
     -t paulomauri/orderpay-webapi:1.0.0 \

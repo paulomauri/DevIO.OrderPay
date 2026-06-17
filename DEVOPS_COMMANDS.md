@@ -171,42 +171,51 @@ docker exec sqlserver2025 /opt/mssql-tools18/bin/sqlcmd \
 
 ## Docker Compose
 
+The stack has seven services: `devio.orderpay.webapi`, `orderpay-web`, `nginx`,
+`sqlserver`, `keycloak`, `keycloak-setup` (one-shot), `postgres`, and `seq`.
+See [DOCKER.md](DOCKER.md) for the full service/port/URL reference.
+
 ### Start & Stop
 
 ```bash
 # start all services (detached)
-docker-compose up -d
+docker compose up -d
 
 # start with rebuild
-docker-compose up --build -d
+docker compose up --build -d
 
-# start specific service only
-docker-compose up sqlserver -d
+# rebuild + restart a single service after code changes
+docker compose up -d --build orderpay-web
+docker compose up -d --build devio.orderpay.webapi
 
 # stop containers (keep data)
-docker-compose down
+docker compose down
 
-# stop and remove volumes (⚠️ destroys data)
-docker-compose down -v
-
-# stop without removing containers
-docker-compose stop
-
-# start stopped containers
-docker-compose start
+# stop and remove volumes (⚠️ destroys DB + Keycloak realm)
+docker compose down -v
 
 # restart all services
-docker-compose restart
+docker compose restart
 ```
 
-### Dev vs Production
+### Keycloak bootstrap
+
+The `keycloak-setup` job creates the realm clients (`orderpay-webapi`, `orderpay-swagger`,
+`orderpay-web`), audience mappers, and users from `keycloak/setup.sh`. It runs once after
+Keycloak is healthy.
 
 ```bash
-# run with override (dev — hot reload)
-docker-compose -f docker-compose.yml -f docker-compose.override.yml up --build -d
+# confirm the bootstrap finished
+docker compose logs keycloak-setup        # ends with "Keycloak setup complete!"
 
-# run production only (no override)
-docker-compose -f docker-compose.yml up --build -d
+# re-run it without wiping data
+docker compose up -d --force-recreate keycloak-setup
+
+# get a JWT for testing (swagger client = direct grant)
+curl -s -X POST http://id.localhost/realms/orderpay/protocol/openid-connect/token \
+    -d client_id=orderpay-swagger \
+    -d username=admin@orderpay.com -d password=Mauri@22 \
+    -d grant_type=password | jq -r .access_token
 ```
 
 ### Monitoring
@@ -261,13 +270,23 @@ docker logout
 ### Push & Pull
 
 ```bash
-# tag image for Docker Hub
-docker tag devioorderpaywebapi paulomauri/orderpay-webapi:1.0.0
-docker tag devioorderpaywebapi paulomauri/orderpay-webapi:latest
+# build + tag backend
+docker build \
+    -t paulomauri/orderpay-webapi:1.0.6 -t paulomauri/orderpay-webapi:latest \
+    -f src/Apps/DevIO.OrderPay.WebApi/Dockerfile .
 
-# push image
-docker push paulomauri/orderpay-webapi:1.0.0
+# build + tag frontend (NEXT_PUBLIC_API_URL="" → same-origin via nginx)
+docker build \
+    -t paulomauri/orderpay-web:1.0.2 -t paulomauri/orderpay-web:latest \
+    --build-arg NEXT_PUBLIC_API_URL="" \
+    -f orderpay-web/Dockerfile orderpay-web/
+
+# push both
+docker push paulomauri/orderpay-webapi:1.0.6
 docker push paulomauri/orderpay-webapi:latest
+
+docker push paulomauri/orderpay-web:1.0.2
+docker push paulomauri/orderpay-web:latest
 
 # pull image
 docker pull paulomauri/orderpay-webapi:latest
@@ -611,13 +630,17 @@ minikube start --driver=docker --memory=4096 --cpus=4
 minikube addons enable ingress
 minikube addons enable metrics-server
 
-# 3. apply manifests
+# 3. apply manifests (in dependency order)
 kubectl apply -f k8s/namespace.yaml
 kubectl config set-context --current --namespace=orderpay
 kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/postgres/
+kubectl apply -f k8s/keycloak/
 kubectl apply -f k8s/sqlserver/
 kubectl apply -f k8s/seq/
 kubectl apply -f k8s/webapi/
+kubectl apply -f k8s/frontend/
+kubectl apply -f k8s/nginx/
 
 # 4. watch pods start
 kubectl get pods -n orderpay -w

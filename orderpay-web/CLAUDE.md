@@ -74,6 +74,17 @@ src/
 - **Redux** — UI state (sidebar, modals) and cart (draft order being built)
 - Never put API response data into Redux
 
+## Forms & error handling
+
+- Each form's zod schema **mirrors the backend FluentValidation rules** — keep them in sync or
+  the API returns 400. Example: CPF is `.transform()`-stripped of punctuation and `.refine()`d
+  to exactly 11 digits (matching `CustomerRequestValidator`: `Length(11)` + digits-only).
+- On a failed mutation, surface the server's real message with `apiErrorMessage(err, fallback)`
+  (`src/services/api.ts`) — it reads the first `ValidationProblemDetails.errors` entry, then
+  `detail`/`title`, before falling back. Don't show a generic toast that hides the cause.
+- A `401` from any API call triggers a single guarded `signOut()` → `/login` (see the Axios
+  response interceptor in `src/services/api.ts`).
+
 ## Auth flow
 
 ```
@@ -103,8 +114,11 @@ See `.env.example` at repo root (frontend section). Copy to `orderpay-web/.env.l
 | `NEXTAUTH_SECRET` | Random string for session cookie encryption |
 | `KEYCLOAK_CLIENT_ID` | `orderpay-web` (confidential client) |
 | `KEYCLOAK_CLIENT_SECRET` | From Keycloak Admin → Clients → orderpay-web → Credentials |
-| `KEYCLOAK_ISSUER` | `http://localhost:8085/realms/orderpay` |
-| `NEXT_PUBLIC_API_URL` | Backend API base URL |
+| `KEYCLOAK_ISSUER` | Docker stack: `http://id.localhost/realms/orderpay` · standalone `npm run dev`: `http://localhost:8085/realms/orderpay` |
+| `NEXT_PUBLIC_API_URL` | Backend API base URL — empty string = same-origin (nginx routes `/api/`) |
+
+> In the Docker stack `NEXTAUTH_URL=http://www.localhost` and `KEYCLOAK_ISSUER` uses the
+> `id.localhost` subdomain so server-side token exchange and the browser hit the same issuer.
 
 ## Commands
 

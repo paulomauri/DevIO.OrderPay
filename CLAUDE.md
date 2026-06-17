@@ -70,7 +70,13 @@ Bounded contexts live under `src/Contexts/`. Shared infrastructure under `src/Ap
 - No error handling for scenarios that cannot happen
 - Prefer editing existing files over creating new ones
 - Keycloak roles: `admin` → full CRUD, `customer` → GET only
-- `HostRewritingHandler` in `KeycloakExtensions.cs` rewrites `id.localhost → keycloak:8085` for JWKS backchannel inside Docker/K8s — only activates when `Keycloak:MetadataAddress` config key is present
+- `HostRewritingHandler` in `KeycloakExtensions.cs` rewrites `id.localhost → keycloak:8085` for JWKS backchannel inside Docker/K8s — only activates when `Keycloak:MetadataAddress` config key is present. It matches on **host** and swaps the whole authority (scheme/host/port), so a ported public URL never yields a double-port target.
+
+## Keycloak realm & clients
+
+- `keycloak/setup.sh` is the **single source of truth** for all clients (`orderpay-webapi` bearer-only, `orderpay-swagger` public+direct-grant, `orderpay-web` confidential), their audience mappers (`aud: orderpay-webapi`), and the seed users. The `keycloak-setup` job runs it once after Keycloak is healthy.
+- `keycloak/realm-export.json` (imported via `--import-realm`) is only the realm shell — realm settings + `admin`/`customer` roles. It deliberately defines **no** clients/users so it can't shadow `setup.sh`.
+- **`KC_HOSTNAME` must be a full URL** (`http://id.localhost`), not a bare host. A bare host makes Keycloak stamp the request port into the discovery doc (`jwks_uri: http://id.localhost:8085/...`); the `HostRewritingHandler` rewrite then builds the invalid `http://keycloak:8085:8085/...` → JWKS fetch fails → `IDX10500` → 401 → frontend `/login` loop. The full URL keeps issuer + `jwks_uri` port-free.
 
 ## Commands
 
