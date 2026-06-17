@@ -13,14 +13,42 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+let signingOut = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      signOut({ callbackUrl: "/login" });
+    const isAlreadyOnLogin =
+      typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/login");
+
+    if (error.response?.status === 401 && !signingOut && !isAlreadyOnLogin) {
+      signingOut = true;
+      signOut({ redirect: false }).then(() => {
+        signingOut = false;
+        window.location.href = "/login";
+      });
     }
     return Promise.reject(error);
   }
 );
 
 export default api;
+
+// Pulls a human-readable message out of an API error. Prefers the first
+// FluentValidation message (ASP.NET ValidationProblemDetails.errors), then
+// ProblemDetails.detail/title, falling back to the supplied default.
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const data = err.response.data as {
+      title?: string;
+      detail?: string;
+      errors?: Record<string, string[]>;
+    };
+    const firstValidation = data.errors
+      ? Object.values(data.errors).flat()[0]
+      : undefined;
+    return firstValidation ?? data.detail ?? data.title ?? fallback;
+  }
+  return fallback;
+}

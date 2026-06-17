@@ -157,12 +157,17 @@ services:
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: "${POSTGRES_PASSWORD:-Mauri@22}"
 
-      KC_HOSTNAME: id.localhost
-      KC_HOSTNAME_PORT: 80
+      # Full URL pins the public frontend base for ALL frontend endpoints
+      # (issuer, auth, token, jwks_uri) regardless of the request port.
+      # Without the scheme, Keycloak stamps the request port (:8085) into the
+      # discovery doc → the WebApi's HostRewritingHandler then builds an invalid
+      # double-port JWKS URL (keycloak:8085:8085) → IDX10500 → 401 login loop.
+      KC_HOSTNAME: http://id.localhost
       KC_HTTP_PORT: 8085
 
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
       KC_HTTP_ENABLED: "true"
 
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
