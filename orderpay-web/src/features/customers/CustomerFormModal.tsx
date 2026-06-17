@@ -12,12 +12,18 @@ import Modal, { ModalBody, ModalFooter } from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { customersService } from "@/services/customers";
+import { apiErrorMessage } from "@/services/api";
 
+// Field rules mirror the backend CustomerRequestValidator. CPF is stripped of
+// punctuation before validation/submit so "000.000.000-00" and "00000000000"
+// both produce the 11 bare digits the API requires.
 const schema = z.object({
-  name:   z.string().min(1, "Name is required"),
-  email:  z.string().email("Invalid email"),
-  cpf:    z.string().min(11, "CPF must be at least 11 digits"),
-  mobile: z.string().min(8, "Mobile number is required"),
+  name:   z.string().min(2, "Name must be at least 2 characters").max(100, "Name must not exceed 100 characters"),
+  email:  z.string().email("Invalid email").max(150, "Email must not exceed 150 characters"),
+  cpf:    z.string()
+            .transform((v) => v.replace(/\D/g, ""))
+            .refine((v) => /^\d{11}$/.test(v), "CPF must be 11 digits"),
+  mobile: z.string().min(10, "Mobile must be at least 10 characters").max(20, "Mobile must not exceed 20 characters"),
 });
 
 type Schema = z.infer<typeof schema>;
@@ -64,7 +70,7 @@ export default function CustomerFormModal() {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       onClose();
     },
-    onError: () => toast.error("Failed to save customer."),
+    onError: (err) => toast.error(apiErrorMessage(err, "Failed to save customer.")),
   });
 
   return (

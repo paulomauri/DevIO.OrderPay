@@ -88,17 +88,26 @@ public static class KeycloakExtensions
 
 // Rewrites the public Keycloak hostname to the internal Docker/K8s hostname in every
 // backchannel HTTP request the JwtBearer middleware makes (discovery doc + JWKS).
+// Matches on host only and swaps the whole authority (scheme/host/port) so a ported
+// public URL (e.g. http://id.localhost:8085) never produces a double-port target.
 internal sealed class HostRewritingHandler(string publicBase, string internalBase, HttpMessageHandler innerHandler)
     : DelegatingHandler(innerHandler)
 {
+    private readonly Uri _publicBase   = new(publicBase);
+    private readonly Uri _internalBase = new(internalBase);
+
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (request.RequestUri is not null)
+        if (request.RequestUri is { } uri &&
+            string.Equals(uri.Host, _publicBase.Host, StringComparison.OrdinalIgnoreCase))
         {
-            string rewritten = request.RequestUri.ToString()
-                .Replace(publicBase, internalBase, StringComparison.OrdinalIgnoreCase);
-            request.RequestUri = new Uri(rewritten);
+            request.RequestUri = new UriBuilder(uri)
+            {
+                Scheme = _internalBase.Scheme,
+                Host   = _internalBase.Host,
+                Port   = _internalBase.Port,
+            }.Uri;
         }
         return base.SendAsync(request, cancellationToken);
     }

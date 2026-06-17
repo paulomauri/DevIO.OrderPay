@@ -56,7 +56,7 @@ export default function LoginPage() {
       <Card>
         <Title>OrderPay</Title>
         <Subtitle>Sign in to manage your orders</Subtitle>
-        <LoginButton onClick={() => signIn("keycloak")}>
+        <LoginButton onClick={() => signIn("keycloak", { callbackUrl: "/dashboard" })}>
           Click here to Sign in on OrderPay
         </LoginButton>
       </Card>
