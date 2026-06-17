@@ -66,7 +66,7 @@ Covers:
 ### 4. Integration Tests — Controllers
 
 **Location:** `WebApi/`  
-**Files:** `OrderControllerIntegrationTests.cs`, `ProductControllerIntegrationTests.cs`, `CustomerControllerIntegrationTests.cs`
+**Files:** `OrderControllerIntegrationTests.cs`, `ProductControllerIntegrationTests.cs`, `CustomerControllerIntegrationTests.cs`, `RateLimitingIntegrationTests.cs`
 
 Spins up the real ASP.NET Core pipeline against an **EF Core InMemory** database. No mocks for the database layer.
 
@@ -82,6 +82,9 @@ Covers:
 - 200 OK — read operations
 - 404 Not Found — non-existing IDs
 - 409 Conflict — duplicate CPF, duplicate order item
+- 429 Too Many Requests — rate-limiting policies (`RateLimitingIntegrationTests.cs`); the
+  limiter is disabled by default in the factory and re-enabled per-test via
+  `PostConfigure<RateLimiterSettings>`
 
 ---
 
@@ -264,4 +267,12 @@ Current score: **84.21%** (High) — `DevIO.OrderPay.Order.Application`
 | Repository integration tests | 22 |
 | Architecture tests | 20 |
 | Resilience (Polly) tests | 9 |
-| **Total** | **194** |
+| Rate limiting integration tests | 4 |
+| **Total** | **198** |
+
+Per-category numbers are approximate (`[Theory]` cases expand via `[InlineData]`); the
+executed total is **198/198**.
+
+> **Frontend tests** are separate. The Next.js app has its own Jest + React Testing Library
+> suite under `orderpay-web/` (`*.test.tsx`, run with `npm test` from `orderpay-web/`) — not
+> part of this .NET project. Playwright E2E (Phase 6 step 10-B) is still pending.
