@@ -30,13 +30,6 @@ const StatLabel = styled.p`
   margin:    0;
 `;
 
-const SectionTitle = styled.h2`
-  font-size:     ${({ theme }) => theme.typography.fontSize.md};
-  font-weight:   ${({ theme }) => theme.typography.fontWeight.semibold};
-  color:         ${({ theme }) => theme.colors.text};
-  margin:        0 0 ${({ theme }) => theme.spacing.md};
-`;
-
 const StatusGrid = styled.div`
   display:               grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

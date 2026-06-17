@@ -33,12 +33,12 @@ function formatDate(iso: string) {
 
 export default function OrdersPage() {
   const dispatch = useAppDispatch();
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, isError } = useQuery({
     queryKey: ["orders"],
     queryFn:  ordersService.getAll,
   });
 
-  const isEmpty = !isLoading && (!orders || orders.length === 0);
+  const isEmpty = !isLoading && !isError && (!orders || orders.length === 0);
 
   return (
     <Card>
@@ -49,7 +49,8 @@ export default function OrdersPage() {
         </Button>
       </CardHeader>
 
-      {isEmpty && <EmptyState message="No orders yet." icon="🛒" />}
+      {isError  && <EmptyState message="Failed to load orders." icon="⚠️" />}
+      {isEmpty  && <EmptyState message="No orders yet." icon="🛒" />}
 
       {!isEmpty && (
         <TableWrapper>

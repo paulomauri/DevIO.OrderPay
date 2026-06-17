@@ -20,12 +20,12 @@ const ActionsCell = styled(Td)`
 
 export default function CustomersPage() {
   const dispatch = useAppDispatch();
-  const { data: customers, isLoading } = useQuery({
+  const { data: customers, isLoading, isError } = useQuery({
     queryKey: ["customers"],
     queryFn:  customersService.getAll,
   });
 
-  const isEmpty = !isLoading && (!customers || customers.length === 0);
+  const isEmpty = !isLoading && !isError && (!customers || customers.length === 0);
 
   return (
     <Card>
@@ -38,7 +38,8 @@ export default function CustomersPage() {
         </AdminOnly>
       </CardHeader>
 
-      {isEmpty && <EmptyState message="No customers found." />}
+      {isError  && <EmptyState message="Failed to load customers." icon="⚠️" />}
+      {isEmpty  && <EmptyState message="No customers found." />}
 
       {!isEmpty && (
         <TableWrapper>

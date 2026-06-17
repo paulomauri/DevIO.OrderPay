@@ -30,7 +30,10 @@ const schema = z.object({
   items:      z.array(itemSchema).min(1, "Add at least one item"),
 });
 
-type Schema = z.infer<typeof schema>;
+// z.coerce.number() gives an `unknown` input type but a `number` output type,
+// so the form's field values (input) and submit payload (output) differ.
+type FormInput  = z.input<typeof schema>;
+type FormOutput = z.output<typeof schema>;
 
 const defaultItem = { productId: "", quantity: 1, price: 0, discount: 0 };
 
@@ -104,7 +107,7 @@ export default function CreateOrderModal() {
     reset,
     control,
     formState: { errors },
-  } = useForm<Schema>({
+  } = useForm<FormInput, unknown, FormOutput>({
     resolver:      zodResolver(schema),
     defaultValues: { customerId: "", details: "", items: [defaultItem] },
   });
@@ -116,7 +119,7 @@ export default function CreateOrderModal() {
   }, [isOpen, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data: Schema) =>
+    mutationFn: (data: FormOutput) =>
       ordersService.create({
         customerId: data.customerId,
         details:    data.details ?? "",
@@ -213,9 +216,6 @@ export default function CreateOrderModal() {
             </Button>
           </ItemsSection>
 
-          {mutation.isError && (
-            <ErrorMsg>Failed to create order. Please try again.</ErrorMsg>
-          )}
         </ModalBody>
         <ModalFooter>
           <Button type="button" variant="ghost" onClick={onClose}>

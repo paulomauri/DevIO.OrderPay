@@ -97,11 +97,6 @@ export default function UpdateStatusModal() {
               This order has reached a terminal status.
             </p>
           )}
-          {mutation.isError && (
-            <span style={{ fontSize: "0.8rem", color: "red" }}>
-              Failed to update status. Please try again.
-            </span>
-          )}
         </ModalBody>
         <ModalFooter>
           <Button type="button" variant="ghost" onClick={onClose}>

@@ -28,12 +28,12 @@ const Description = styled.span`
 
 export default function ProductsPage() {
   const dispatch = useAppDispatch();
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading, isError } = useQuery({
     queryKey: ["products"],
     queryFn:  productsService.getAll,
   });
 
-  const isEmpty = !isLoading && (!products || products.length === 0);
+  const isEmpty = !isLoading && !isError && (!products || products.length === 0);
 
   return (
     <Card>
@@ -46,7 +46,8 @@ export default function ProductsPage() {
         </AdminOnly>
       </CardHeader>
 
-      {isEmpty && <EmptyState message="No products found." icon="📦" />}
+      {isError  && <EmptyState message="Failed to load products." icon="⚠️" />}
+      {isEmpty  && <EmptyState message="No products found." icon="📦" />}
 
       {!isEmpty && (
         <TableWrapper>

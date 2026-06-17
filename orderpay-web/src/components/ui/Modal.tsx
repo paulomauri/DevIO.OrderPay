@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
 
@@ -99,10 +99,6 @@ export default function Modal({
   children,
   maxWidth = "520px",
 }: ModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -111,7 +107,9 @@ export default function Modal({
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
 
-  if (!mounted || !isOpen) return null;
+  // Modals always start closed, so server and first client render both produce
+  // null — the document guard only keeps createPortal off the SSR pass.
+  if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
     <Overlay onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
