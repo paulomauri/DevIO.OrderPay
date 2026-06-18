@@ -169,7 +169,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
-| 6 — Frontend (React + Next.js + Redux) | 🔄 Steps 1–10A done / Step 10B pending |
+| 6 — Frontend (React + Next.js + Redux) | ✅ Done (Steps 1–10B) |
 | 7 — Payment Bounded Context + Idempotency | pending |
 | 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
 | 9 — Logistics Integration (outbound dispatch + inbound webhook) | pending |
@@ -189,7 +189,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 8 | Forms + validation — react-hook-form + zod, ModalManager, CRUD modals, mutations | ✅ Done |
 | 9 | Error handling + loading states — toasts, skeletons, empty states, error boundary | ✅ Done |
 | 10-A | Unit/component tests — Jest + React Testing Library | ✅ Done |
-| 10-B | E2E tests — Playwright (`tests/e2e/` at solution root) | pending |
+| 10-B | E2E tests — Playwright (`tests/e2e/` at solution root) | ✅ Done (9 specs, containerised runner) |
 
 ## Phase 6 — Step 8: Forms + validation (pending)
 

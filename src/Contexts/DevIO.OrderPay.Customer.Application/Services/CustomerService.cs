@@ -19,6 +19,7 @@ public class CustomerService(ICustomerRepository repository) : ICustomerService
             Id = cliente.Id,
             Name = cliente.Nome,
             Email = cliente.Email.Value,   // ← Domain model
+            Cpf = cliente.CPF,
             Mobile = cliente.Celular ?? ""
         };
     }
@@ -97,6 +98,7 @@ public class CustomerService(ICustomerRepository repository) : ICustomerService
         Id = c.Id,
         Name = c.Nome,
         Email = c.Email.Value,
+        Cpf = c.CPF,
         Mobile = c.Celular ?? ""
     };
 }

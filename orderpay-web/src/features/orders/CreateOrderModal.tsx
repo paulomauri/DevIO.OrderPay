@@ -16,17 +16,22 @@ import Button from "@/components/ui/Button";
 import { customersService } from "@/services/customers";
 import { productsService } from "@/services/products";
 import { ordersService } from "@/services/orders";
+import { apiErrorMessage } from "@/services/api";
 
+// Rules mirror the backend OrderRequestValidator, including discount ≤ price.
 const itemSchema = z.object({
   productId: z.string().min(1, "Select a product"),
   quantity:  z.coerce.number().int().min(1, "Min 1"),
   price:     z.coerce.number().min(0.01, "Enter price"),
   discount:  z.coerce.number().min(0).default(0),
+}).refine((i) => i.discount <= i.price, {
+  message: "Discount can't exceed price",
+  path: ["discount"],
 });
 
 const schema = z.object({
   customerId: z.string().min(1, "Select a customer"),
-  details:    z.string().optional(),
+  details:    z.string().max(500, "Details must not exceed 500 characters").optional(),
   items:      z.array(itemSchema).min(1, "Add at least one item"),
 });
 
@@ -130,7 +135,7 @@ export default function CreateOrderModal() {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       onClose();
     },
-    onError: () => toast.error("Failed to create order."),
+    onError: (err) => toast.error(apiErrorMessage(err, "Failed to create order.")),
   });
 
   return (
@@ -191,6 +196,7 @@ export default function CreateOrderModal() {
                   step="0.01"
                   min={0}
                   placeholder="Disc."
+                  error={errors.items?.[idx]?.discount?.message}
                   {...register(`items.${idx}.discount`)}
                 />
                 <RemoveBtn

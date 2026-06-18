@@ -1,0 +1,32 @@
+# Containerised Playwright runner.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml \
+#     run --rm playwright
+#
+# Chromium hardcodes *.localhost → 127.0.0.1, so DNS aliases don't help. Instead
+# the runner shares nginx's network namespace: 127.0.0.1:80 IS nginx, and nginx
+# routes www.localhost / api.localhost / id.localhost by Host header. No host DNS
+# or host Node install needed.
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.55.0-noble
+    working_dir: /e2e
+    environment:
+      - BASE_URL=http://www.localhost
+      - CI=true
+    volumes:
+      - ./tests/e2e:/e2e
+    network_mode: "service:nginx"
+    depends_on:
+      - nginx
+      - orderpay-web
+      - devio.orderpay.webapi
+      - keycloak
+    # Chromium special-cases *.localhost → 127.0.0.1, but Node (wait-on, the API
+    # seeding request fixture) does not — so map the subdomains in /etc/hosts.
+    # In nginx's netns 127.0.0.1:80 is nginx, which routes by Host header.
+    command: >
+      sh -c "echo '127.0.0.1 www.localhost api.localhost id.localhost' >> /etc/hosts &&
+             npm install --no-audit --no-fund &&
+             npx wait-on http://www.localhost --timeout 120000 &&
+             npx playwright test"
