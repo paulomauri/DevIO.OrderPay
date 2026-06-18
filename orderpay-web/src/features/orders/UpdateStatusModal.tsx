@@ -12,6 +12,7 @@ import Modal, { ModalBody, ModalFooter } from "@/components/ui/Modal";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import { ordersService } from "@/services/orders";
+import { apiErrorMessage } from "@/services/api";
 import type { OrderStatus } from "@/types/order";
 
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -69,7 +70,7 @@ export default function UpdateStatusModal() {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       onClose();
     },
-    onError: () => toast.error("Failed to update status."),
+    onError: (err) => toast.error(apiErrorMessage(err, "Failed to update status.")),
   });
 
   return (

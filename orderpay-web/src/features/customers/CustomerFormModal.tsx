@@ -52,7 +52,7 @@ export default function CustomerFormModal() {
 
   useEffect(() => {
     if (isOpen && existing) {
-      reset({ name: existing.name, email: existing.email, cpf: "", mobile: existing.mobile });
+      reset({ name: existing.name, email: existing.email, cpf: existing.cpf, mobile: existing.mobile });
     } else if (isOpen && isCreate) {
       reset({ name: "", email: "", cpf: "", mobile: "" });
     }
@@ -90,14 +90,12 @@ export default function CustomerFormModal() {
             error={errors.email?.message}
             {...register("email")}
           />
-          {isCreate && (
-            <Input
-              label="CPF"
-              placeholder="000.000.000-00"
-              error={errors.cpf?.message}
-              {...register("cpf")}
-            />
-          )}
+          <Input
+            label="CPF"
+            placeholder="000.000.000-00"
+            error={errors.cpf?.message}
+            {...register("cpf")}
+          />
           <Input
             label="Mobile"
             placeholder="+55 11 90000-0000"

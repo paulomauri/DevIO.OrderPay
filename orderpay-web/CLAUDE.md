@@ -163,4 +163,4 @@ npm run lint
 | 8 — Forms + validation | ✅ Done |
 | 9 — Error handling + loading states | ✅ Done |
 | 10-A — Unit/component tests (Jest + RTL) | ✅ Done |
-| 10-B — E2E tests (Playwright) | pending |
+| 10-B — E2E tests (Playwright) | ✅ Done — `tests/e2e/` at solution root, containerised runner |
