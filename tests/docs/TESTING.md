@@ -1,10 +1,20 @@
-# DevIO.OrderPay — Test Project Guide
+# DevIO.OrderPay — Test Guide
 
 ## Overview
 
-All tests live in a single project: `tests/DevIO.OrderPay.Tests/`.
+The project has **three** test suites:
 
-The project uses **xUnit** as the test runner, **FluentAssertions** for readable assertions, **Moq** for mocking, **NetArchTest.Rules** for architecture enforcement, and **EF Core InMemory** for integration/repository tests.
+| Suite | Location | Stack | How to run |
+|---|---|---|---|
+| Backend (unit/integration) | `tests/DevIO.OrderPay.Tests/` | xUnit, FluentAssertions, Moq, NetArchTest, EF InMemory | [`dotnet test`](#running-backend-tests-net) |
+| Frontend (component) | `orderpay-web/src/**/*.test.tsx` | Jest + React Testing Library | [Node container](#frontend-tests-jest--react-testing-library) |
+| End-to-end | `tests/e2e/` | Playwright (real browser → full stack) | [containerised runner](#end-to-end-tests-playwright) |
+
+> **Why containers for the JS suites?** This dev machine has only Windows Node via WSL
+> interop (`node` isn't on the Linux PATH), so Jest and Playwright run inside Docker. If you
+> have a Linux Node, you can run them natively too (noted in each section).
+
+The backend project uses **xUnit** as the test runner, **FluentAssertions** for readable assertions, **Moq** for mocking, **NetArchTest.Rules** for architecture enforcement, and **EF Core InMemory** for integration/repository tests.
 
 ---
 
@@ -163,7 +173,7 @@ Covers:
 
 ---
 
-## Running Tests
+## Running backend tests (.NET)
 
 ### Run all tests
 ```bash
@@ -256,7 +266,109 @@ Current score: **84.21%** (High) — `DevIO.OrderPay.Order.Application`
 
 ---
 
+## Frontend Tests (Jest + React Testing Library)
+
+Component/unit tests for the Next.js app. Files live next to source as `*.test.tsx`
+(`Button`, `Badge`/`OrderStatusBadge`, `AdminOnly`, `useIsAdmin`, `CustomersPage`).
+
+The production `orderpay-web` image doesn't ship the source/test files, so run Jest in a
+throwaway Node container that mounts the frontend source:
+
+```bash
+# from the repo root — run ALL frontend tests
+docker run --rm -v "$PWD/orderpay-web:/app" -w /app node:22-bookworm-slim \
+  sh -c "npm ci && npx jest --ci"
+```
+
+Variations (change the part after `npm ci &&`):
+
+```bash
+# a single file
+... sh -c "npm ci && npx jest Badge"
+
+# a single test by name
+... sh -c "npm ci && npx jest -t 'shows Spinner when loading'"
+
+# with coverage
+... sh -c "npm ci && npx jest --coverage"
+```
+
+Watch mode (interactive — note the `-it` and the cached node_modules volume so re-installs
+are skipped):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/orderpay-web:/app" -v orderpay_web_node:/app/node_modules \
+  -w /app node:22-bookworm-slim \
+  sh -c "npm ci && npx jest --watch"
+```
+
+**With a Linux Node on the host** you can skip Docker:
+```bash
+cd orderpay-web && npm install && npm test
+```
+
+---
+
+## End-to-End Tests (Playwright)
+
+Drives a real browser through the entire running stack
+(`browser → nginx → Next.js → WebApi → Keycloak → SQL Server`). 9 specs: auth, customers,
+products, orders. See [`tests/e2e/README.md`](../e2e/README.md) for structure.
+
+**Prerequisite — the stack must be up and healthy:**
+```bash
+docker compose up -d
+docker compose ps        # wait until keycloak = healthy
+```
+
+**Run the whole suite** (containerised runner — shares nginx's network namespace, so no host
+Node or host DNS is needed):
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm playwright
+```
+
+**Run a subset** — override the command, keeping the `/etc/hosts` patch + wait-on:
+```bash
+# one spec file
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm playwright \
+  sh -c "echo '127.0.0.1 www.localhost api.localhost id.localhost' >> /etc/hosts \
+         && npm install && npx wait-on http://www.localhost --timeout 120000 \
+         && npx playwright test customers.spec.ts"
+
+# by title substring
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm playwright \
+  sh -c "echo '127.0.0.1 www.localhost api.localhost id.localhost' >> /etc/hosts \
+         && npm install && npx wait-on http://www.localhost --timeout 120000 \
+         && npx playwright test -g 'creates an order'"
+```
+
+**CI / one-shot with exit code:**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml \
+  up --exit-code-from playwright --abort-on-container-exit playwright
+```
+
+**Results** (written to the bind-mounted host folder):
+```
+tests/e2e/playwright-report/    # HTML report — open index.html
+tests/e2e/test-results/         # screenshots + trace.zip on failure
+```
+Open the report from WSL: `explorer.exe tests/e2e/playwright-report`.
+
+> The runner is headless. Debug failures via the trace viewer / screenshots — `--ui` and
+> `--headed` need a Linux Node + display on the host (not available on this machine).
+
+**With a Linux Node on the host:**
+```bash
+cd tests/e2e && npm install && npx playwright install chromium && npx playwright test
+```
+
+---
+
 ## Test Count Summary
+
+### Backend — .NET (`tests/DevIO.OrderPay.Tests`)
 
 | Category | Count |
 |---|---|
@@ -273,6 +385,9 @@ Current score: **84.21%** (High) — `DevIO.OrderPay.Order.Application`
 Per-category numbers are approximate (`[Theory]` cases expand via `[InlineData]`); the
 executed total is **198/198**.
 
-> **Frontend tests** are separate. The Next.js app has its own Jest + React Testing Library
-> suite under `orderpay-web/` (`*.test.tsx`, run with `npm test` from `orderpay-web/`) — not
-> part of this .NET project. Playwright E2E (Phase 6 step 10-B) is still pending.
+### Frontend & E2E (JavaScript)
+
+| Suite | Count |
+|---|---|
+| Jest component tests (`orderpay-web`) | 30 |
+| Playwright E2E specs (`tests/e2e`) | 9 |
