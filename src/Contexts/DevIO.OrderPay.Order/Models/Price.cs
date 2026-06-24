@@ -1,7 +1,4 @@
-﻿using DevIO.OrderPay.Order.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using DevIO.OrderPay.Order.Exceptions;
 
 namespace DevIO.OrderPay.Order.Models
 {
