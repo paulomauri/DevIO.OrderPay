@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Contexts\DevIO.OrderPay.Customer\DevIO.OrderPay.Customer.csproj" />
     <ProjectReference Include="..\..\Contexts\DevIO.OrderPay.Order\DevIO.OrderPay.Order.csproj" />
+    <ProjectReference Include="..\..\Contexts\DevIO.OrderPay.Payment\DevIO.OrderPay.Payment.csproj" />
     <ProjectReference Include="..\DevIO.OrderPay.Core\DevIO.OrderPay.Core.csproj" />
   </ItemGroup>
 
