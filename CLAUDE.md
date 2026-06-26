@@ -164,13 +164,13 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | Phase | Status |
 |---|---|
 | 1 — Authentication | ✅ Done |
-| 2 — Unit Tests (198/198) | ✅ Done |
+| 2 — Unit Tests (221/221) | ✅ Done |
 | K8s deployment | ✅ Done |
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
 | 5 — CI/CD Pipeline | ✅ Done |
 | 6 — Frontend (React + Next.js + Redux) | ✅ Done (Steps 1–10B) |
-| 7 — Payment Bounded Context + Idempotency | pending |
+| 7 — Payment Bounded Context + Idempotency | ✅ Done |
 | 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
 | 9 — Logistics Integration (outbound dispatch + inbound webhook) | pending |
 | 10 — Datadog (cloud observability) | pending |
@@ -343,27 +343,34 @@ takes ~30 s to finish booting even after the container reports healthy.
 - `tests/e2e/fixtures/.auth-*.json` are gitignored (generated at test runtime)
 - `wait-on` npm package added to `tests/e2e/package.json` dev dependencies
 
-## Phase 7 — Payment Bounded Context (pending)
+## Phase 7 — Payment Bounded Context (✅ Done)
 
-New bounded context `DevIO.OrderPay.Payment` with its own domain, application, and infra layers.
+New bounded context `DevIO.OrderPay.Payment` (domain + application), with infra in `Infra` and the gateway port in `Core`. 23 tests (18 unit + 5 integration); verified live (capture advances the order, replay never double-charges, `0000` card declines).
 
-**Domain**
-- `Payment` aggregate — `PaymentStatus` state machine: `Pending → Processing → Authorized → Captured → Refunded / Failed`
-- `PaymentMethod` value object — card brand, last 4 digits, expiry
-- `Amount` value object
-- `PaymentAttempt` entity — holds `IdempotencyKey` (composite: `orderId:attemptNumber`), persisted before gateway call
-- `InvalidPaymentTransitionException`, `DuplicatePaymentAttemptException`
+**Domain** (`DevIO.OrderPay.Payment`)
+- `Payment` aggregate — `PaymentStatus` state machine: `Pending → Processing → Authorized → Captured → Refunded`; `Failed` terminal. Methods: `BeginProcessing/Authorize/Capture/Decline/Abandon/Refund`. **Rule: a declined attempt does NOT fail the payment** — `Decline()` returns it to `Pending` (retryable); `Abandon()` → `Failed` is the deliberate give-up.
+- `Amount` value object (decimal + currency, defaults `USD`); `PaymentMethod` polymorphic (`PaymentMethodCard` / `PaymentMethodACH` + `PaymentType`).
+- `PaymentAttempt` — `IdempotencyKey` (`orderId:attemptNumber`) + `Outcome` (`Pending→Succeeded|Failed`) + `ExpiresAt`. `NextNumber(existing)` picks the next attempt number.
+- `InvalidPaymentTransitionException`, `DuplicatePaymentAttemptException`, `ValueLowerThanZeroException`.
 
-**Application**
-- `PaymentService` — calls `IPaymentGateway` with the idempotency key; on retry, finds existing `PaymentAttempt` by key and skips the charge
-- `IPaymentGateway` — abstraction over Stripe/mock; adapter receives the key and returns cached result if already processed
-- Raises `PaymentCapturedEvent` on success
+**Application** (`DevIO.OrderPay.Payment.Application`)
+- `PaymentService` — persists the attempt **before** the gateway call; on retry with a resolved attempt, replays the stored result (no charge). Raises `PaymentCapturedEvent` after capture.
+- The gateway port `IPaymentGateway` + `PaymentGatewayResult` live in **`Core/Gateway`** (like the repository interfaces) so the Infra adapter implements them without Infra → Application. `MockPaymentGateway` (Infra) dedupes by key; cards ending `0000` decline.
 
-**Integration**
-- `OrderService` reacts to `PaymentCapturedEvent` → advances `OrderStatus`: `AwaitingPayment → PaymentConfirmed → Processing`
-- Advancing to `Processing` writes an `OutboxMessage` (logistics notification payload) atomically in the same EF Core transaction
+**Integration / WebApi**
+- `PaymentController` — `POST /api/v1/payment` (idempotent) + `GET /api/v1/payment/{orderId}`.
+- `IPaymentCapturedHandler` is the Payment→Order seam; the WebApi composition root's `OrderPaymentCapturedHandler` advances the order to `PaymentConfirmed`. **Phase 8 replaces this in-process call with the Outbox.**
+- `JsonStringEnumConverter` registered so `PaymentType` binds from names (e.g. `"CREDIT"`).
+
+**Persistence notes**
+- `Amount` → two flat columns (`AmountValue`/`AmountCurrency`) via `OwnsOne`; ctor param names must match property names for EF binding.
+- `PaymentMethod` is **polymorphic, so it's stored as a single JSON column** (EF owned types can't be polymorphic) — `PaymentMethodJson` serializes it in Infra. Not the flattened-columns option originally sketched.
+- Unique index on `PaymentAttempt.IdempotencyKey` is the at-most-once backbone; `PaymentRepository.SaveChangesAsync` translates the unique-violation `SqlException` (2601/2627) into `DuplicatePaymentAttemptException` → `409`.
+- `IDesignTimeDbContextFactory<AppDbContext>` (`AppDbContextFactory`) added so `Add-Migration` in VS doesn't time out booting the WebApi host.
 
 **Idempotency guarantee:** payment is charged at-most-once — retrying a failed call with the same key never double-charges.
+
+**Deferred to Phase 8:** the Outbox write on `OrderProcessing`, domain-event dispatch infrastructure, and the order advance to `Processing`.
 
 ## Phase 8 — Order State Machine + Domain Events + Outbox (pending)
 
