@@ -7,7 +7,9 @@ type ModalName =
   | "createProduct"
   | "editProduct"
   | "createOrder"
+  | "editOrder"
   | "updateStatus"
+  | "payOrder"
   | "confirmDelete"
   | null;
 

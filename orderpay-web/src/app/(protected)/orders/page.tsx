@@ -12,11 +12,17 @@ import AdminOnly from "@/components/ui/AdminOnly";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { ordersService } from "@/services/orders";
+import { isOrderEditable } from "@/types/order";
 
+// Fixed 4-column grid so every row's actions (Pay · Edit · Status · Delete) line
+// up in the same columns; buttons fill their cell for an even, aligned look.
 const ActionsCell = styled(Td)`
-  display:     flex;
-  gap:         ${({ theme }) => theme.spacing.xs};
-  align-items: center;
+  display:               grid;
+  grid-template-columns: repeat(4, minmax(56px, 1fr));
+  gap:                   ${({ theme }) => theme.spacing.xs};
+  align-items:           center;
+
+  & > * { width: 100%; }
 `;
 
 const ShortId = styled.span`
@@ -60,21 +66,38 @@ export default function OrdersPage() {
                 <Th>Order ID</Th>
                 <Th>Date</Th>
                 <Th>Status</Th>
+                <Th>Discount</Th>
                 <Th>Total</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
             <Tbody>
               {isLoading ? (
-                <TableSkeleton cols={5} />
+                <TableSkeleton cols={6} />
               ) : (
                 orders!.map((o) => (
                   <Tr key={o.id}>
                     <Td><ShortId>{o.id.slice(0, 8)}…</ShortId></Td>
                     <Td>{formatDate(o.orderDate)}</Td>
                     <Td><OrderStatusBadge status={o.status} /></Td>
+                    <Td>${o.totalDiscount.toFixed(2)}</Td>
                     <Td>${(o.totalPrice - o.totalDiscount).toFixed(2)}</Td>
                     <ActionsCell>
+                      <Button
+                        size="sm"
+                        disabled={!isOrderEditable(o.status)}
+                        onClick={() => dispatch(openModal({ modal: "payOrder", payload: o.id }))}
+                      >
+                        Pay
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={!isOrderEditable(o.status)}
+                        onClick={() => dispatch(openModal({ modal: "editOrder", payload: o.id }))}
+                      >
+                        Edit
+                      </Button>
                       <AdminOnly>
                         <Button
                           size="sm"

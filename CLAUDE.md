@@ -368,6 +368,11 @@ New bounded context `DevIO.OrderPay.Payment` (domain + application), with infra 
 - Unique index on `PaymentAttempt.IdempotencyKey` is the at-most-once backbone; `PaymentRepository.SaveChangesAsync` translates the unique-violation `SqlException` (2601/2627) into `DuplicatePaymentAttemptException` → `409`.
 - `IDesignTimeDbContextFactory<AppDbContext>` (`AppDbContextFactory`) added so `Add-Migration` in VS doesn't time out booting the WebApi host.
 
+**Frontend** (`orderpay-web`, card-only)
+- `features/payments/PayOrderModal` — card form (amount derived from the order); `Pay` button on the Orders table.
+- `features/orders/EditOrderModal` — order summary + add/remove items; `Edit` button. `isOrderEditable(status)` (`types/order.ts`) gates Pay/Edit to `Pending`/`AwaitingPayment` (UI-only guard — the backend `items` endpoints don't enforce it). Orders table also gained a **Discount** column.
+- E2E `tests/e2e/specs/payments.spec.ts`. See `orderpay-web/CLAUDE.md` → "Phase 7 — Payment & order editing".
+
 **Idempotency guarantee:** payment is charged at-most-once — retrying a failed call with the same key never double-charges.
 
 **Deferred to Phase 8:** the Outbox write on `OrderProcessing`, domain-event dispatch infrastructure, and the order advance to `Processing`.

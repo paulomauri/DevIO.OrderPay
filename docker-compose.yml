@@ -7,6 +7,9 @@ services:
     build:
       context: .
       dockerfile: src/Apps/DevIO.OrderPay.WebApi/Dockerfile
+      # Build on the host network — BuildKit's isolated builder network can fail to
+      # reach NuGet (dotnet restore) on this setup; the host network works.
+      network: host
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080        # ← forces HTTP only, no HTTPS
@@ -35,6 +38,9 @@ services:
     build:
       context: ./orderpay-web
       dockerfile: Dockerfile
+      # Build on the host network — BuildKit's isolated builder network can fail to
+      # reach registry.npmjs.org (npm ci) on this setup; the host network works.
+      network: host
       args:
         NEXT_PUBLIC_API_URL: ""   # empty = same origin; nginx routes /api/ to webapi
     container_name: orderpay-web
