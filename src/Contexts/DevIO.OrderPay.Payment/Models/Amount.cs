@@ -6,12 +6,14 @@ namespace DevIO.OrderPay.Payment.Models
     {
         public decimal Value { get; }
         public string Currency { get; }
-        public Amount(decimal amount, string currency)
+        // Parameter names must match the property names (value → Value, currency →
+        // Currency) so EF Core can bind this constructor when materializing the owned type.
+        public Amount(decimal value, string currency)
         {
-            if (amount < 0)
-                throw new ValueLowerThanZeroException(amount);
-            Value = amount;
-            Currency = string.IsNullOrEmpty(currency.Trim()) ? "USD" : currency;
+            if (value < 0)
+                throw new ValueLowerThanZeroException(value);
+            Value = value;
+            Currency = string.IsNullOrWhiteSpace(currency) ? "USD" : currency;
         }
     }
 }

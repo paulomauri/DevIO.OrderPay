@@ -26,7 +26,7 @@ public abstract class Repository<T>(AppDbContext context) : IRepository<T> where
 
     public async Task<IEnumerable<T>> GetAllAsync() => await DbSet.AsNoTracking().ToListAsync();
 
-    public async Task<int> SaveChangesAsync() => await Context.SaveChangesAsync();
+    public virtual async Task<int> SaveChangesAsync() => await Context.SaveChangesAsync();
 
     public void Dispose() => Context.Dispose();
 }

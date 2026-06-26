@@ -27,6 +27,8 @@
     <ProjectReference Include="..\..\src\Contexts\DevIO.OrderPay.Customer.Application\DevIO.OrderPay.Customer.Application.csproj" />
     <ProjectReference Include="..\..\src\Contexts\DevIO.OrderPay.Order\DevIO.OrderPay.Order.csproj" />
     <ProjectReference Include="..\..\src\Contexts\DevIO.OrderPay.Order.Application\DevIO.OrderPay.Order.Application.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\DevIO.OrderPay.Payment\DevIO.OrderPay.Payment.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\DevIO.OrderPay.Payment.Application\DevIO.OrderPay.Payment.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

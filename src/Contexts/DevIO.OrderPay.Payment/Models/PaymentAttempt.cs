@@ -2,14 +2,18 @@ using DevIO.OrderPay.Payment.Models;
 
 public class PaymentAttempt
 {
-    public Guid Id { get; }
-    public string IdempotencyKey { get; }
-    public Guid OrderId { get; }
-    public int AttemptNumber { get; }
+    public Guid Id { get; private set; }
+    public string IdempotencyKey { get; private set; } = string.Empty;
+    public Guid OrderId { get; private set; }
+    public int AttemptNumber { get; private set; }
     public PaymentAttemptOutcome Outcome { get; private set; }
     public string? GatewayReference { get; private set; }   // null until the gateway responds
-    public DateTime CreatedAt { get; }
-    public DateTime ExpiresAt { get; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime ExpiresAt { get; private set; }
+
+    // EF Core materializes through this parameterless ctor, writing the read-only
+    // properties via their backing fields.
+    private PaymentAttempt() { }
 
     public PaymentAttempt(Guid orderId, int attemptNumber)
     {

@@ -136,6 +136,8 @@
     <Project Path="src/Contexts/DevIO.OrderPay.Order/DevIO.OrderPay.Order.csproj" Id="1bcce006-89d7-4c6c-b877-cdb435d68346" />
   </Folder>
   <Folder Name="/src/Contexts/Payment/">
+    <File Path="src/Contexts/DevIO.OrderPay.Payment/CLAUDE.md" />
+    <File Path="src/Contexts/DevIO.OrderPay.Payment.Application/CLAUDE.md" />
     <Project Path="src/Contexts/DevIO.OrderPay.Payment.Application/DevIO.OrderPay.Payment.Application.csproj" Id="8fdc937e-c41e-4343-9f30-a53b4beddd7e" />
     <Project Path="src/Contexts/DevIO.OrderPay.Payment/DevIO.OrderPay.Payment.csproj" Id="dac1a857-7277-414b-af15-739d146ba3a0" />
   </Folder>

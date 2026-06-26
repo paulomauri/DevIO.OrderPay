@@ -3,9 +3,14 @@ using DevIO.OrderPay.Core.Repository;
 using DevIO.OrderPay.Customer.Application.Validators;
 using DevIO.OrderPay.Order.Application.Services;
 using DevIO.OrderPay.Order.Application.Validators;
+using DevIO.OrderPay.Core.Gateway;
+using DevIO.OrderPay.Payment.Application.Services;
+using DevIO.OrderPay.Payment.Application.Integration;
+using DevIO.OrderPay.Payment.Application.Validators;
 using DevIO.OrderPay.Infra;
 using DevIO.OrderPay.Infra.Repositories;
 using DevIO.OrderPay.WebApi.Auth;
+using DevIO.OrderPay.WebApi.Integration;
 using DevIO.OrderPay.WebApi.Extensions;
 using DevIO.OrderPay.WebApi.Middleware;
 using DevIO.OrderPay.WebApi.Services;
@@ -28,7 +33,11 @@ builder.AddOpenTelemetryObservability();
 builder.Services.AddControllers()
      .ConfigureApiBehaviorOptions(options =>
          // let FluentValidation handle validation responses
-         options.SuppressModelStateInvalidFilter = true);
+         options.SuppressModelStateInvalidFilter = true)
+     // accept/emit enums by name (e.g. PaymentType "CREDIT") instead of by number
+     .AddJsonOptions(options =>
+         options.JsonSerializerOptions.Converters.Add(
+             new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 
 
@@ -102,6 +111,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<CustomerRequestValidator>()
 builder.Services.AddValidatorsFromAssemblyContaining<CustomerInfoRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ProductRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<OrderRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<PaymentRequestValidator>();
 
 // ── IoC ────────────────────────────────────────────────────
 // Bind interface (Core) → implementation (Infra)
@@ -113,6 +123,13 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+// Singleton: the mock gateway dedupes by idempotency key via a shared in-memory cache.
+builder.Services.AddSingleton<IPaymentGateway, MockPaymentGateway>();
+// The Payment → Order seam (advances the order on capture).
+builder.Services.AddScoped<IPaymentCapturedHandler, OrderPaymentCapturedHandler>();
 
 // ── CorrelationId Acessor ────────────────────────────────────────────────────-
 builder.Services.AddHttpContextAccessor();
