@@ -43,3 +43,9 @@ export interface OrderRequest {
   details:    string;
   items:      OrderItemRequest[];
 }
+
+// An order can be edited/paid only before payment is confirmed. Once it reaches
+// PaymentConfirmed (or anything after), its items are locked.
+export function isOrderEditable(status: OrderStatus): boolean {
+  return status === "Pending" || status === "AwaitingPayment";
+}

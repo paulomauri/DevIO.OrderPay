@@ -30,14 +30,16 @@ src/
 │   ├── ui/                       # Primitives: Button, Input, Badge, Modal, Table, Card, Spinner
 │   └── layout/                   # Sidebar, Header
 ├── features/                     # Domain-scoped components + hooks
-│   ├── customers/
-│   ├── products/
-│   └── orders/
+│   ├── customers/                # CustomerFormModal
+│   ├── products/                 # ProductFormModal
+│   ├── orders/                   # CreateOrderModal, EditOrderModal, UpdateStatusModal
+│   └── payments/                 # PayOrderModal (card payment)
 ├── services/                     # Axios API calls — no React, no hooks
 │   ├── api.ts                    # Axios instance + JWT interceptor
 │   ├── customers.ts
 │   ├── products.ts
-│   └── orders.ts
+│   ├── orders.ts
+│   └── payments.ts               # pay() + getByOrder()
 ├── store/                        # Redux Toolkit
 │   ├── index.ts
 │   ├── uiSlice.ts                # sidebar open/close, active modal
@@ -164,3 +166,23 @@ npm run lint
 | 9 — Error handling + loading states | ✅ Done |
 | 10-A — Unit/component tests (Jest + RTL) | ✅ Done |
 | 10-B — E2E tests (Playwright) | ✅ Done — `tests/e2e/` at solution root, containerised runner |
+
+## Phase 7 — Payment & order editing (frontend)
+
+Added on top of Phase 6 once the Payment backend landed:
+
+- **`features/payments/PayOrderModal`** — card payment form (zod mirrors the backend
+  `PaymentRequestValidator`); amount is **derived from the order** (`totalPrice − totalDiscount`),
+  not entered. `POST /api/v1/payment` → on `Captured`, invalidates `["orders"]` so the status
+  badge flips to **Payment Confirmed**; a `200` that isn't `Captured` (a decline) keeps the modal
+  open for a retry.
+- **`features/orders/EditOrderModal`** — order summary (id, customer name, description, date,
+  status badge) + add/remove items (`POST`/`DELETE /order/{id}/items`). The only mutations the
+  backend exposes for an order; there's no full-order/details update.
+- **Editability rule** — `isOrderEditable(status)` in `types/order.ts`: only `Pending` /
+  `AwaitingPayment` are editable/payable. On the Orders table the **Pay** and **Edit** buttons are
+  always rendered (4-column grid `ActionsCell`) and **disabled** once the order is past
+  `AwaitingPayment` — this UI gate is the only guard (the backend `items` endpoints don't enforce
+  it; server-side locking belongs with the Phase 8 order state machine).
+- Orders table gained a **Discount** column (`order.totalDiscount`); Total stays net.
+- E2E: `tests/e2e/specs/payments.spec.ts` — pay by card → Payment Confirmed badge.

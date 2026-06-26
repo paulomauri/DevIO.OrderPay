@@ -243,3 +243,14 @@ docker compose logs devio.orderpay.webapi | grep -i migrat
 
 ### SSL/TLS error connecting to SQL Server (DBeaver/VS Code)
 Set driver properties: `encrypt = false`, `trustServerCertificate = true`.
+
+### Build fails with `npm ETIMEDOUT` / `dotnet restore` network errors
+BuildKit runs builds in an isolated network namespace that can intermittently fail to reach
+`registry.npmjs.org` / NuGet — even when the host and normal containers can. The `orderpay-web`
+and `webapi` **build** configs in `docker-compose.yml` pin `network: host` to use the host's
+network during the build, which fixes it. If you ever build outside Compose, add `--network=host`:
+```bash
+docker build --network=host --build-arg NEXT_PUBLIC_API_URL="" \
+  -t devioorderpay-orderpay-web -f orderpay-web/Dockerfile orderpay-web/
+```
+This is build-time only — it has no effect on the running containers (still on `app_network`).

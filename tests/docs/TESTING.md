@@ -313,8 +313,8 @@ cd orderpay-web && npm install && npm test
 ## End-to-End Tests (Playwright)
 
 Drives a real browser through the entire running stack
-(`browser → nginx → Next.js → WebApi → Keycloak → SQL Server`). 9 specs: auth, customers,
-products, orders. See [`tests/e2e/README.md`](../e2e/README.md) for structure.
+(`browser → nginx → Next.js → WebApi → Keycloak → SQL Server`). 10 specs: auth, customers,
+products, orders, payments. See [`tests/e2e/README.md`](../e2e/README.md) for structure.
 
 **Prerequisite — the stack must be up and healthy:**
 ```bash
@@ -380,14 +380,15 @@ cd tests/e2e && npm install && npx playwright install chromium && npx playwright
 | Architecture tests | 20 |
 | Resilience (Polly) tests | 9 |
 | Rate limiting integration tests | 4 |
-| **Total** | **198** |
+| Payment tests (18 unit + 5 integration) | 23 |
+| **Total** | **221** |
 
 Per-category numbers are approximate (`[Theory]` cases expand via `[InlineData]`); the
-executed total is **198/198**.
+executed total is **221/221**.
 
 ### Frontend & E2E (JavaScript)
 
 | Suite | Count |
 |---|---|
 | Jest component tests (`orderpay-web`) | 30 |
-| Playwright E2E specs (`tests/e2e`) | 9 |
+| Playwright E2E specs (`tests/e2e`) | 10 |

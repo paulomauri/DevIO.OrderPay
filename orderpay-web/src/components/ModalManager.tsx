@@ -5,7 +5,9 @@ import { selectActiveModal } from "@/store/uiSlice";
 import CustomerFormModal from "@/features/customers/CustomerFormModal";
 import ProductFormModal from "@/features/products/ProductFormModal";
 import CreateOrderModal from "@/features/orders/CreateOrderModal";
+import EditOrderModal from "@/features/orders/EditOrderModal";
 import UpdateStatusModal from "@/features/orders/UpdateStatusModal";
+import PayOrderModal from "@/features/payments/PayOrderModal";
 import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 
 export default function ModalManager() {
@@ -25,8 +27,14 @@ export default function ModalManager() {
     case "createOrder":
       return <CreateOrderModal />;
 
+    case "editOrder":
+      return <EditOrderModal />;
+
     case "updateStatus":
       return <UpdateStatusModal />;
+
+    case "payOrder":
+      return <PayOrderModal />;
 
     case "confirmDelete":
       return <ConfirmDeleteModal />;
