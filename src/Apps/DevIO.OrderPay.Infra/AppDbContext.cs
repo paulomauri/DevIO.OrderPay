@@ -1,4 +1,5 @@
 using DevIO.OrderPay.Customer.Models;
+using DevIO.OrderPay.Infra.Outbox;
 using DevIO.OrderPay.Order.Models;
 using DevIO.OrderPay.Payment.Models;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                       v => new Price(v));
 
             entity.Ignore(o => o.Customer);
+            entity.Ignore(o => o.DomainEvents); // raised in-memory; persisted via the Outbox, not as a column
 
             entity.HasMany(o => o.Items)
                   .WithOne()
@@ -118,6 +120,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                   .HasConversion<string>()
                   .HasMaxLength(20);
         });
+
+        // ── Outbox ────────────────────────────────────────────────────
+        builder.Entity<OutboxMessage>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.Type).IsRequired();
+            entity.Property(m => m.Content).IsRequired();
+            entity.HasIndex(m => m.ProcessedOn); // the worker polls unprocessed rows
+        });
+
+        builder.Entity<ProcessedOutboxMessage>(entity => entity.HasKey(m => m.Id));
     }
 
     // Customer context
@@ -132,4 +145,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Payment context
     public DbSet<Payment.Models.Payment> Payment { get; set; }
     public DbSet<PaymentAttempt> PaymentAttempt { get; set; }
+
+    // Outbox
+    public DbSet<OutboxMessage> OutboxMessage { get; set; }
+    public DbSet<ProcessedOutboxMessage> ProcessedOutboxMessage { get; set; }
 }

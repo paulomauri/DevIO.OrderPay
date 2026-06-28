@@ -21,8 +21,7 @@ public class OrderRepository(AppDbContext context)
         var order = await DbSet.FirstOrDefaultAsync(o => o.Id == orderId);
         if (order is null) return false;
 
-        order.Status = status;
-        order.UpdatedAt = DateTime.UtcNow;
+        order.UpdateStatus(status); // validates the transition; throws InvalidOrderTransitionException
         DbSet.Update(order);
         return true;
     }

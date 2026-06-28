@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Apps\DevIO.OrderPay.Core\DevIO.OrderPay.Core.csproj" />
+    <ProjectReference Include="..\..\src\Apps\DevIO.OrderPay.SharedKernel\DevIO.OrderPay.SharedKernel.csproj" />
     <ProjectReference Include="..\..\src\Apps\DevIO.OrderPay.Infra\DevIO.OrderPay.Infra.csproj" />
     <ProjectReference Include="..\..\src\Apps\DevIO.OrderPay.WebApi\DevIO.OrderPay.WebApi.csproj" />
     <ProjectReference Include="..\..\src\Contexts\DevIO.OrderPay.Customer\DevIO.OrderPay.Customer.csproj" />

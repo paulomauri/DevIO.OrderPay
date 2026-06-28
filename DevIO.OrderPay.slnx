@@ -120,6 +120,7 @@
     <File Path="src/Apps/DevIO.OrderPay.WebApi/CLAUDE.md" />
     <Project Path="src/Apps/DevIO.OrderPay.Core/DevIO.OrderPay.Core.csproj" Id="84e071c9-85c8-43b9-bd54-2d41e1ddb0ae" />
     <Project Path="src/Apps/DevIO.OrderPay.Infra/DevIO.OrderPay.Infra.csproj" Id="d138f548-6135-4f58-ad96-5cef6b833761" />
+    <Project Path="src/Apps/DevIO.OrderPay.SharedKernel/DevIO.OrderPay.SharedKernel.csproj" Id="e3c0e3e6-21b4-4576-b05a-9c05158aa027" />
     <Project Path="src/Apps/DevIO.OrderPay.WebApi/DevIO.OrderPay.WebApi.csproj" />
   </Folder>
   <Folder Name="/src/Contexts/" />

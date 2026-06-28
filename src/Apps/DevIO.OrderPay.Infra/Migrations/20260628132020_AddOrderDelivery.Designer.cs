@@ -4,6 +4,7 @@ using DevIO.OrderPay.Infra;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DevIO.OrderPay.Infra.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628132020_AddOrderDelivery")]
+    partial class AddOrderDelivery
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -87,50 +90,6 @@ namespace DevIO.OrderPay.Infra.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Customer");
-                });
-
-            modelBuilder.Entity("DevIO.OrderPay.Infra.Outbox.OutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("OccurredOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ProcessedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProcessedOn");
-
-                    b.ToTable("OutboxMessage");
-                });
-
-            modelBuilder.Entity("DevIO.OrderPay.Infra.Outbox.ProcessedOutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("ProcessedOn")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ProcessedOutboxMessage");
                 });
 
             modelBuilder.Entity("DevIO.OrderPay.Order.Models.Order", b =>

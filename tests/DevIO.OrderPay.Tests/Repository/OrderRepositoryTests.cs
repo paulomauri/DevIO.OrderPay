@@ -137,13 +137,14 @@ public class OrderRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
-        bool result = await _repository.UpdateStatusAsync(order.Id, OrderStatus.Shipped);
+        // Pending → PaymentConfirmed is a valid transition (Pending → Shipped is not).
+        bool result = await _repository.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed);
         await _repository.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
         result.Should().BeTrue();
         var loaded = await _repository.GetByIdAsync(order.Id);
-        loaded!.Status.Should().Be(OrderStatus.Shipped);
+        loaded!.Status.Should().Be(OrderStatus.PaymentConfirmed);
     }
 
     [Fact]
