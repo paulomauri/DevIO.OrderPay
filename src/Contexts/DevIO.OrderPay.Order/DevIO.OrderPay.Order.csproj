@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Apps\DevIO.OrderPay.SharedKernel\DevIO.OrderPay.SharedKernel.csproj" />
+  </ItemGroup>
+
 </Project>

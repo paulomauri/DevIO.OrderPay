@@ -8,6 +8,7 @@ using DevIO.OrderPay.Payment.Application.Services;
 using DevIO.OrderPay.Payment.Application.Integration;
 using DevIO.OrderPay.Payment.Application.Validators;
 using DevIO.OrderPay.Infra;
+using DevIO.OrderPay.Infra.Outbox;
 using DevIO.OrderPay.Infra.Repositories;
 using DevIO.OrderPay.WebApi.Auth;
 using DevIO.OrderPay.WebApi.Integration;
@@ -96,13 +97,16 @@ builder.Services.AddScoped<IClaimsTransformation, KeycloakRoleClaimTransformer>(
 
 // Add Migration
 // Add-Migration "InitProject" -Project DevIO.OrderPay.Infra -StartupProject DevIO.OrderPay.WebApi
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions => sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(10),
-            errorNumbersToAdd: null)));
+builder.Services.AddSingleton<ConvertDomainEventsToOutboxInterceptor>();
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+    options
+        .AddInterceptors(sp.GetRequiredService<ConvertDomainEventsToOutboxInterceptor>())
+        .UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection"),
+            sqlOptions => sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null)));
 
 // ── Validation ─────────────────────────────────────────────
 // FluentValidation — scans Application assembly for validators

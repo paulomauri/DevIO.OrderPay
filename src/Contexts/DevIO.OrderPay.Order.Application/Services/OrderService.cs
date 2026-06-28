@@ -60,11 +60,10 @@ public class OrderService(IOrderRepository repository) : IOrderService
         Models.Order? order = await _repository.GetByIdAsync(id);
         if (order is null) return null;
 
-        await _repository.UpdateStatusAsync(id, status);
-        await _repository.SaveChangesAsync();
+        order.UpdateStatus(status); // validates the transition; throws InvalidOrderTransitionException
 
-        order.Status = status;
-        order.UpdatedAt = DateTime.UtcNow;
+        await _repository.UpdateAsync(order);
+        await _repository.SaveChangesAsync();
 
         return MapToResponse(order);
     }

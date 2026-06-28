@@ -96,8 +96,15 @@ public class OrderController(IOrderService service) : ControllerBase
         if (parsed is null)
             return BadRequest(new { error = $"Invalid status '{status}'." });
 
-        var order = await _service.UpdateStatusAsync(id, parsed.Value);
-        return order is null ? NotFound() : Ok(order);
+        try
+        {
+            var order = await _service.UpdateStatusAsync(id, parsed.Value);
+            return order is null ? NotFound() : Ok(order);
+        }
+        catch (InvalidOrderTransitionException ex)
+        {
+            return UnprocessableEntity(new { error = ex.Message });
+        }
     }
 
     [HttpPatch("{id:guid}/delivery-date")]

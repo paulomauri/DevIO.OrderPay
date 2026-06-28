@@ -146,16 +146,14 @@ public class OrderServiceTests
     [Fact]
     public async Task UpdateStatusAsync_ExistingId_ReturnsUpdatedStatus()
     {
-        var order = BuildOrder();
+        var order = BuildOrder(); // Pending → PaymentConfirmed is valid
         _repoMock.Setup(r => r.GetByIdAsync(order.Id)).ReturnsAsync(order);
-        _repoMock.Setup(r => r.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed))
-                 .ReturnsAsync(true);
 
         var result = await _sut.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed);
 
         result.Should().NotBeNull();
         result!.Status.Should().Be("PaymentConfirmed");
-        _repoMock.Verify(r => r.UpdateStatusAsync(order.Id, OrderStatus.PaymentConfirmed), Times.Once);
+        _repoMock.Verify(r => r.UpdateAsync(order), Times.Once);
         _repoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
