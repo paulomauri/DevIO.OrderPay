@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Apps\DevIO.OrderPay.Core\DevIO.OrderPay.Core.csproj" />
+    <ProjectReference Include="..\..\Apps\DevIO.OrderPay.SharedKernel\DevIO.OrderPay.SharedKernel.csproj" />
     <ProjectReference Include="..\DevIO.OrderPay.Order\DevIO.OrderPay.Order.csproj" />
   </ItemGroup>
 

@@ -1,5 +1,6 @@
 using DevIO.OrderPay.Payment.Exceptions;
 using DevIO.OrderPay.Payment.Models;
+using DevIO.OrderPay.SharedKernel.Contracts;
 using FluentAssertions;
 
 namespace DevIO.OrderPay.Tests.Domain;
@@ -36,6 +37,19 @@ public class PaymentTests
         var act = payment.Capture;
 
         act.Should().Throw<InvalidPaymentTransitionException>();
+    }
+
+    [Fact]
+    public void Capture_RaisesPaymentCapturedEvent()
+    {
+        var payment = NewPayment();
+        payment.BeginProcessing();
+        payment.Authorize("ref_1");
+
+        payment.Capture();
+
+        payment.DomainEvents.OfType<PaymentCapturedEvent>()
+            .Should().ContainSingle(e => e.OrderId == payment.OrderId && e.GatewayReference == "ref_1");
     }
 
     [Fact]

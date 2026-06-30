@@ -1,19 +1,16 @@
 using DevIO.OrderPay.Core.Gateway;
 using DevIO.OrderPay.Core.Repository;
 using DevIO.OrderPay.Payment.Application.DTOs;
-using DevIO.OrderPay.Payment.Application.Integration;
 using DevIO.OrderPay.Payment.Models;
 
 namespace DevIO.OrderPay.Payment.Application.Services;
 
 public class PaymentService(
     IPaymentRepository repository,
-    IPaymentGateway gateway,
-    IPaymentCapturedHandler capturedHandler) : IPaymentService
+    IPaymentGateway gateway) : IPaymentService
 {
     private readonly IPaymentRepository _repository = repository;
     private readonly IPaymentGateway _gateway = gateway;
-    private readonly IPaymentCapturedHandler _capturedHandler = capturedHandler;
 
     public async Task<PaymentResponse> PayAsync(PaymentRequest request, CancellationToken cancellationToken = default)
     {
@@ -69,15 +66,11 @@ public class PaymentService(
             payment.Decline();
         }
 
+        // On capture the Payment aggregate raised PaymentCapturedEvent; SaveChanges runs the
+        // Outbox interceptor, which persists it in the same transaction. The OutboxWorker
+        // then advances the order — no in-process call to the Order context.
         await _repository.UpdateAsync(payment);
         await _repository.SaveChangesAsync();
-
-        if (result.Approved)
-        {
-            await _capturedHandler.HandleAsync(
-                new PaymentCapturedEvent(payment.Id, payment.OrderId, amount.Value, amount.Currency, result.GatewayReference!),
-                cancellationToken);
-        }
 
         return MapToResponse(payment, attempt);
     }

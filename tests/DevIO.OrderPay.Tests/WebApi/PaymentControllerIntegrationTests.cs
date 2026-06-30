@@ -30,7 +30,7 @@ public class PaymentControllerIntegrationTests(OrderPayWebApplicationFactory fac
     // ── 200 — capture advances the order ─────────────────────
 
     [Fact]
-    public async Task Pay_ValidRequest_CapturesAndAdvancesOrderToPaymentConfirmed()
+    public async Task Pay_ValidRequest_CapturesPayment()
     {
         var client = _factory.CreateClientWithRoles("admin");
         Guid orderId = await CreateOrderAsync(client);
@@ -41,11 +41,8 @@ public class PaymentControllerIntegrationTests(OrderPayWebApplicationFactory fac
         PaymentResponse? payment = await response.Content.ReadFromJsonAsync<PaymentResponse>();
         payment!.Status.Should().Be("Captured");
         payment.AttemptOutcome.Should().Be("Succeeded");
-
-        // The PaymentCaptured seam advanced the order.
-        OrderResponse? order = await (await client.GetAsync($"{OrderUrl}/{orderId}"))
-            .Content.ReadFromJsonAsync<OrderResponse>();
-        order!.Status.Should().Be("PaymentConfirmed");
+        // The order advance to PaymentConfirmed now happens asynchronously via the Outbox
+        // (covered by ConfirmOrderOnPaymentCaptured handler tests + the outbox interceptor tests).
     }
 
     // ── Idempotency: same attempt → no re-charge ─────────────
