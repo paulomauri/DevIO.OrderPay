@@ -1,9 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
 using DevIO.OrderPay.Payment.Exceptions;
+using DevIO.OrderPay.SharedKernel;
+using DevIO.OrderPay.SharedKernel.Contracts;
 
 namespace DevIO.OrderPay.Payment.Models;
 
-public class Payment
+public class Payment : AggregateRoot
 {
     // The aggregate is the ONLY place Status changes — every move is checked
     // against this map so illegal transitions can't reach the database.
@@ -48,7 +50,12 @@ public class Payment
         GatewayReference = gatewayReference;
     }
 
-    public void Capture() => TransitionTo(PaymentStatus.Captured);
+    public void Capture()
+    {
+        TransitionTo(PaymentStatus.Captured);
+        // Published via the Outbox; the Order context advances the order on this event.
+        RaiseEvent(new PaymentCapturedEvent(Id, OrderId, Amount.Value, Amount.Currency, GatewayReference ?? string.Empty));
+    }
 
     // Soft fail — a declined attempt returns the payment to Pending so it can be retried.
     public void Decline() => TransitionTo(PaymentStatus.Pending);

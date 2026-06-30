@@ -1,9 +1,9 @@
 using DevIO.OrderPay.Core.Gateway;
 using DevIO.OrderPay.Core.Repository;
 using DevIO.OrderPay.Payment.Application.DTOs;
-using DevIO.OrderPay.Payment.Application.Integration;
 using DevIO.OrderPay.Payment.Application.Services;
 using DevIO.OrderPay.Payment.Models;
+using DevIO.OrderPay.SharedKernel.Contracts;
 using FluentAssertions;
 using Moq;
 
@@ -13,13 +13,16 @@ public class PaymentServiceTests
 {
     private readonly Mock<IPaymentRepository> _repo = new();
     private readonly Mock<IPaymentGateway> _gateway = new();
-    private readonly Mock<IPaymentCapturedHandler> _captured = new();
     private readonly PaymentService _sut;
+    private Payment.Models.Payment? _savedPayment; // captured from UpdateAsync to inspect raised events
 
     public PaymentServiceTests()
     {
         _repo.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
-        _sut = new PaymentService(_repo.Object, _gateway.Object, _captured.Object);
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<Payment.Models.Payment>()))
+             .Callback<Payment.Models.Payment>(p => _savedPayment = p)
+             .Returns(Task.CompletedTask);
+        _sut = new PaymentService(_repo.Object, _gateway.Object);
     }
 
     private static PaymentRequest Request(Guid orderId, int? attemptNumber = null) => new()
@@ -63,8 +66,9 @@ public class PaymentServiceTests
         result.Status.Should().Be("Captured");
         result.AttemptOutcome.Should().Be("Succeeded");
         result.GatewayReference.Should().Be("ref_1");
-        _captured.Verify(h => h.HandleAsync(
-            It.Is<PaymentCapturedEvent>(e => e.OrderId == orderId), It.IsAny<CancellationToken>()), Times.Once);
+        // Capture raises the integration event; the Outbox interceptor persists it on save.
+        _savedPayment!.DomainEvents.OfType<PaymentCapturedEvent>()
+            .Should().ContainSingle(e => e.OrderId == orderId);
     }
 
     // ── Idempotency: the core guarantee ───────────────────────
@@ -87,11 +91,9 @@ public class PaymentServiceTests
 
         var result = await _sut.PayAsync(Request(orderId, attemptNumber: 1));
 
-        // Replayed from the stored attempt — no charge, no event.
+        // Replayed from the stored attempt — no charge.
         _gateway.Verify(g => g.ChargeAsync(
             It.IsAny<string>(), It.IsAny<Amount>(), It.IsAny<PaymentMethod>(), It.IsAny<CancellationToken>()), Times.Never);
-        _captured.Verify(h => h.HandleAsync(
-            It.IsAny<PaymentCapturedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
         result.Status.Should().Be("Captured");
     }
 
@@ -108,8 +110,7 @@ public class PaymentServiceTests
 
         result.AttemptOutcome.Should().Be("Failed");
         result.Status.Should().Be("Pending");      // Decline() returns the payment to Pending
-        _captured.Verify(h => h.HandleAsync(
-            It.IsAny<PaymentCapturedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _savedPayment!.DomainEvents.OfType<PaymentCapturedEvent>().Should().BeEmpty(); // no capture event on decline
     }
 
     // ── At-most-once for a single attempt ─────────────────────

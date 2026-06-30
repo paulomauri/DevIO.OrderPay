@@ -5,17 +5,22 @@ using DevIO.OrderPay.Order.Application.Services;
 using DevIO.OrderPay.Order.Application.Validators;
 using DevIO.OrderPay.Core.Gateway;
 using DevIO.OrderPay.Payment.Application.Services;
-using DevIO.OrderPay.Payment.Application.Integration;
 using DevIO.OrderPay.Payment.Application.Validators;
+using DevIO.OrderPay.Order.Application.EventHandlers;
+using DevIO.OrderPay.Order.Events;
+using DevIO.OrderPay.SharedKernel.Contracts;
+using DevIO.OrderPay.SharedKernel.Events;
 using DevIO.OrderPay.Infra;
 using DevIO.OrderPay.Infra.Outbox;
 using DevIO.OrderPay.Infra.Repositories;
 using DevIO.OrderPay.WebApi.Auth;
-using DevIO.OrderPay.WebApi.Integration;
+using DevIO.OrderPay.WebApi.Messaging;
+using DevIO.OrderPay.WebApi.Outbox;
 using DevIO.OrderPay.WebApi.Extensions;
 using DevIO.OrderPay.WebApi.Middleware;
 using DevIO.OrderPay.WebApi.Services;
 using FluentValidation;
+using MassTransit;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -132,8 +137,41 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 // Singleton: the mock gateway dedupes by idempotency key via a shared in-memory cache.
 builder.Services.AddSingleton<IPaymentGateway, MockPaymentGateway>();
-// The Payment → Order seam (advances the order on capture).
-builder.Services.AddScoped<IPaymentCapturedHandler, OrderPaymentCapturedHandler>();
+
+// ── Outbox → broker (8b) ───────────────────────────────────
+// The OutboxWorker drains the Outbox and publishes each event to RabbitMQ via MassTransit;
+// consumers (WebApi.Messaging) dedup by event Id and delegate to these business handlers.
+builder.Services.AddScoped<IDomainEventHandler<PaymentCapturedEvent>, ConfirmOrderOnPaymentCaptured>();
+builder.Services.AddScoped<IDomainEventHandler<PaymentConfirmedEvent>, StartProcessingOnOrderConfirmed>();
+builder.Services.AddHostedService<OutboxWorker>();
+
+// Transport is RabbitMq by default; integration tests set Messaging:Transport=InMemory so the
+// bus needs no broker. ConfigureEndpoints wires a receive endpoint per registered consumer.
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<PaymentCapturedConsumer>();
+    x.AddConsumer<PaymentConfirmedConsumer>();
+
+    if (string.Equals(builder.Configuration["Messaging:Transport"], "InMemory", StringComparison.OrdinalIgnoreCase))
+    {
+        x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
+    }
+    else
+    {
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(
+                builder.Configuration["RabbitMq:Host"] ?? "localhost",
+                builder.Configuration["RabbitMq:VirtualHost"] ?? "/",
+                h =>
+                {
+                    h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+                    h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+                });
+            cfg.ConfigureEndpoints(context);
+        });
+    }
+});
 
 // ── CorrelationId Acessor ────────────────────────────────────────────────────-
 builder.Services.AddHttpContextAccessor();

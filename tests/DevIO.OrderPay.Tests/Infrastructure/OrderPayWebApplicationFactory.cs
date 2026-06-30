@@ -13,6 +13,9 @@ public class OrderPayWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // MassTransit uses its in-memory transport in tests — no RabbitMQ broker required.
+        builder.UseSetting("Messaging:Transport", "InMemory");
+
         builder.ConfigureTestServices(services =>
         {
             services.PostConfigure<RateLimiterSettings>(o => o.Enabled = false);

@@ -15,8 +15,13 @@ WORKDIR /src
 COPY ["src/Apps/DevIO.OrderPay.WebApi/DevIO.OrderPay.WebApi.csproj", "src/Apps/DevIO.OrderPay.WebApi/"]
 COPY ["src/Apps/DevIO.OrderPay.Infra/DevIO.OrderPay.Infra.csproj", "src/Apps/DevIO.OrderPay.Infra/"]
 COPY ["src/Apps/DevIO.OrderPay.Core/DevIO.OrderPay.Core.csproj", "src/Apps/DevIO.OrderPay.Core/"]
+COPY ["src/Apps/DevIO.OrderPay.SharedKernel/DevIO.OrderPay.SharedKernel.csproj", "src/Apps/DevIO.OrderPay.SharedKernel/"]
 COPY ["src/Contexts/DevIO.OrderPay.Customer.Application/DevIO.OrderPay.Customer.Application.csproj", "src/Contexts/DevIO.OrderPay.Customer.Application/"]
 COPY ["src/Contexts/DevIO.OrderPay.Customer/DevIO.OrderPay.Customer.csproj", "src/Contexts/DevIO.OrderPay.Customer/"]
+COPY ["src/Contexts/DevIO.OrderPay.Order.Application/DevIO.OrderPay.Order.Application.csproj", "src/Contexts/DevIO.OrderPay.Order.Application/"]
+COPY ["src/Contexts/DevIO.OrderPay.Order/DevIO.OrderPay.Order.csproj", "src/Contexts/DevIO.OrderPay.Order/"]
+COPY ["src/Contexts/DevIO.OrderPay.Payment.Application/DevIO.OrderPay.Payment.Application.csproj", "src/Contexts/DevIO.OrderPay.Payment.Application/"]
+COPY ["src/Contexts/DevIO.OrderPay.Payment/DevIO.OrderPay.Payment.csproj", "src/Contexts/DevIO.OrderPay.Payment/"]
 RUN dotnet restore "./src/Apps/DevIO.OrderPay.WebApi/DevIO.OrderPay.WebApi.csproj"
 COPY . .
 WORKDIR "/src/src/Apps/DevIO.OrderPay.WebApi"

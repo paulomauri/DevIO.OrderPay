@@ -7,6 +7,7 @@ Study project — .NET 10 Clean Architecture API exploring DevIO patterns with o
 - **API:** ASP.NET Core 10, EF Core (SQL Server), FluentValidation, ASP.NET Core Rate Limiting
 - **Auth:** Keycloak (JWT/OAuth2) — clients `orderpay-swagger` (issues tokens) + `orderpay-webapi` (bearer-only)
 - **Observability:** Serilog + Seq, OpenTelemetry
+- **Messaging:** RabbitMQ + MassTransit (transactional Outbox → broker; effectively-once via consumer dedup)
 - **Infrastructure:** Docker Compose, Kubernetes (Minikube), SQL Server 2025
 
 ## Architecture — 4 layers
@@ -129,6 +130,7 @@ kubectl apply -f k8s/secrets.yaml
 kubectl apply -f k8s/postgres/
 kubectl apply -f k8s/keycloak/
 kubectl apply -f k8s/sqlserver/
+kubectl apply -f k8s/rabbitmq/
 kubectl apply -f k8s/seq/
 kubectl apply -f k8s/webapi/
 kubectl apply -f k8s/frontend/
@@ -157,6 +159,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | Swagger | `http://api.localhost/swagger` | `http://127.0.0.1/swagger` |
 | Keycloak Admin | `http://id.localhost/admin` | `http://localhost:8085/admin` |
 | Keycloak (direct) | `http://localhost:8085/admin` | — |
+| RabbitMQ (management) | `http://localhost:15672` | `http://127.0.0.1:15672` |
 | Seq | `http://seq.localhost:8082` | `http://127.0.0.1:8082` |
 
 ## Roadmap
@@ -171,7 +174,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | 5 — CI/CD Pipeline | ✅ Done |
 | 6 — Frontend (React + Next.js + Redux) | ✅ Done (Steps 1–10B) |
 | 7 — Payment Bounded Context + Idempotency | ✅ Done |
-| 8 — Order State Machine + Domain Events + Outbox + Idempotency | pending |
+| 8 — Order State Machine + Domain Events + Outbox + Idempotency | ✅ Done |
 | 9 — Logistics Integration (outbound dispatch + inbound webhook) | pending |
 | 10 — Datadog (cloud observability) | pending |
 
@@ -377,52 +380,93 @@ New bounded context `DevIO.OrderPay.Payment` (domain + application), with infra 
 
 **Deferred to Phase 8:** the Outbox write on `OrderProcessing`, domain-event dispatch infrastructure, and the order advance to `Processing`.
 
-## Phase 8 — Order State Machine + Domain Events + Outbox (pending)
+## Phase 8 — Order State Machine + Domain Events + Outbox (✅ Done)
 
-**Full order lifecycle**
+Built in two passes the user chose explicitly: **8a** = transactional Outbox drained by an
+**in-process** dispatcher; **8b** = same Outbox, but the worker **publishes to RabbitMQ via
+MassTransit** and idempotent consumers apply the side effects. 239 tests; verified live on
+Docker Compose (pay → `Pending → PaymentConfirmed → Processing` advances asynchronously, the
+SEND/RECEIVE pair visible in the broker logs).
+
+**Order lifecycle (allowed-transitions map)**
 ```
-Created → AwaitingPayment → PaymentConfirmed → Processing → Shipped → Delivered
+Pending → AwaitingPayment → PaymentConfirmed → Processing → Shipped → Delivered
                                                     ↓
                                           CancellationRequested → Refunding → Cancelled
-                                          Failed
 ```
+- **`Pending → PaymentConfirmed` is allowed** so the Phase 7 payment flow keeps working. The
+  enum has **no `Failed`** state. Terminal states (`Delivered`, `Cancelled`) map to `[]`.
 
-**State machine**
-- `Order.UpdateStatus(newStatus)` validates the transition against an allowed-transitions map
-- Throws `InvalidOrderTransitionException` for illegal moves (e.g. `Pending → Delivered`)
-- `Order.MarkDelivered(deliveredAt, deliveredBy)` — calls `UpdateStatus(Delivered)` then sets `DeliveredAt` and `DeliveredBy`
+**State machine** (`Order : AggregateRoot`)
+- `Status` is `{ get; private set; }` — the aggregate is the only mutator (dropped `required`;
+  `required` + private set is CS9032).
+- `UpdateStatus(next)` — **no-ops if `Status == next`** (so a redelivered event can't double-fire),
+  validates against `_allowedTransitions`, sets `Status` + `UpdatedAt`, then raises the matching
+  event (`PaymentConfirmedEvent` / `OrderProcessingEvent` / `OrderShippedEvent` /
+  `OrderDeliveredEvent` / `OrderCancelledEvent`).
+- Throws `InvalidOrderTransitionException` (→ `422` in `OrderController`) for illegal moves.
+- `MarkDelivered(deliveredAt, deliveredBy)` → `UpdateStatus(Delivered)` then sets the two fields.
+- New fields `DeliveredAt` (`DateTime?`), `DeliveredBy` (`string?`, observation: carrier/driver/notes).
 
-**New Order fields**
-- `DeliveredAt` (`DateTime?`) — set when status transitions to `Delivered`
-- `DeliveredBy` (`string?`) — observation field: carrier name, driver, or any delivery notes
+**SharedKernel project** (`src/Apps/DevIO.OrderPay.SharedKernel`, dependency-free)
+- `IDomainEvent` / `DomainEvent` (base record: `EventId`, `OccurredOn`), `IDomainEventHandler<T>`,
+  and `AggregateRoot` (accumulates events in a `List<IDomainEvent>`, `RaiseEvent`, `ClearDomainEvents`).
+- **Lives here, not in Core** — Core references the domain projects, so putting `IDomainEvent`
+  there would be circular. Domains + Infra + WebApi reference SharedKernel.
+- `Contracts/PaymentCapturedEvent.cs` — the cross-context integration event (Payment → Order).
+  Placed in SharedKernel so **Payment no longer references Order** (broker-decoupled, user's choice):
+  `Payment.Capture()` raises it, the Order side reacts.
 
-**Domain events**
-- `Order` accumulates `IDomainEvent` instances in a `List<IDomainEvent>`
-- Events: `PaymentConfirmedEvent`, `OrderProcessingEvent`, `OrderShippedEvent`, `OrderDeliveredEvent`, `OrderCancelledEvent`
-- Application layer dispatches them after `SaveChanges`
+**Transactional Outbox** (`Infra/Outbox`)
+- `OutboxMessage { Id, Type, Content, OccurredOn, ProcessedOn?, Error? }` — `Id` = the event's
+  `EventId` (the dedup key). `ProcessedOutboxMessage { Id, ProcessedOn }` — consumed-event ledger.
+- `ConvertDomainEventsToOutboxInterceptor` (a `SaveChangesInterceptor`) reads
+  `ChangeTracker.Entries<AggregateRoot>()`, serializes each event to an `OutboxMessage` row, and
+  clears the events — **in the same `SaveChanges`/transaction** as the aggregate (solves the
+  dual-write problem). `AppDbContext` `Ignore`s `DomainEvents` so it's never a column.
 
-**Outbox pattern**
-- `OutboxMessage` table — written atomically in the same EF Core transaction as the aggregate save; each message has a stable GUID `Id`
-- `ProcessedOutboxMessage` table — stores consumed message IDs
-- `OutboxWorker` (`IHostedService`) — polls every N seconds; for `OrderProcessingEvent` messages, calls `ILogisticsClient.NotifyOrderAsync`; for other events, publishes to RabbitMQ via MassTransit; marks done after success
+**8b — Outbox → RabbitMQ → consumers**
+- `OutboxWorker` (`BackgroundService`, 1 s poll, batch 20) claims a batch, then per message in
+  its own scope deserializes the event and **`IPublishEndpoint.Publish(domainEvent, runtimeType)`**
+  (runtime type → routes to the matching `IConsumer<TEvent>`), marks `ProcessedOn`. On exception it
+  records `Error` and leaves the row for the next poll (at-least-once).
+- **Single-claim (multi-replica safe):** `OutboxMessage` carries `ClaimedAt`/`ClaimedBy`. On SQL
+  Server the worker claims atomically — one `UPDATE … SET ClaimedAt/ClaimedBy WHERE Id IN (SELECT
+  TOP(n) … WITH (ROWLOCK, READPAST) WHERE ProcessedOn IS NULL AND (ClaimedAt IS NULL OR ClaimedAt <
+  now-lease) ORDER BY OccurredOn)` stamps a unique per-poll token, then it loads only its own rows
+  by token. `READPAST` lets a sibling replica skip locked rows instead of blocking; the `lease`
+  (60 s) reclaims rows a crashed worker claimed but never processed. So with `replicas: 2` each row
+  is published by exactly **one** worker (verified live: a 3-event order split 2/1 across two pods).
+  The **InMemory** test provider has no atomic claim — `db.Database.IsSqlServer()` falls back to a
+  plain `WHERE ProcessedOn IS NULL` scan (no concurrency in tests). Filtered index
+  `(ProcessedOn, OccurredOn) WHERE ProcessedOn IS NULL` backs the claim (migration `AddOutboxClaim`).
+- Consumers (`WebApi/Messaging`): `PaymentCapturedConsumer`, `PaymentConfirmedConsumer`. Each is
+  thin plumbing — it runs `IdempotentConsumer.HandleOnce` (dedup gate: skip if `EventId` already in
+  `ProcessedOutboxMessage`, else run + record) and delegates to the **business handler in
+  `Order.Application/EventHandlers`** (`ConfirmOrderOnPaymentCaptured`, `StartProcessingOnOrderConfirmed`).
+  Business logic stays out of WebApi/Infra.
+- MassTransit registered in `Program.cs`; `Messaging:Transport` config key selects the transport —
+  `RabbitMq` (default) or `InMemory` (the test factory sets this via `UseSetting`, so the suite needs
+  no broker). RabbitMQ connection via `RabbitMq:Host/Username/Password` keys.
+- **NuGet pinned to MassTransit `8.5.2`** (the free OSS line) — `dotnet add` resolved v9.1.2, which
+  moved to commercial licensing; pinned back to avoid a runtime license prompt in a study project.
+- RabbitMQ container added to `docker-compose.yml` (`rabbitmq:4-management`, ports 5672 / 15672) and
+  `k8s/rabbitmq/` (+ `rabbitmq-user`/`rabbitmq-password` secrets, env wired into `webapi/deployment.yaml`).
 
-**Outbound logistics notification** (triggered by `OrderProcessingEvent` via Outbox)
-- `ILogisticsClient` (abstraction in `Order.Application`) — `NotifyOrderAsync(order)`
-- `HttpLogisticsClient` (implementation in `Infra`) — HTTP POST to configured logistics endpoint
-- Payload: `OrderId`, `Items`, `ShippingAddress`, `CreatedAt`, `IdempotencyKey` (= `OutboxMessage.Id`)
-- Retried automatically by the Outbox worker on failure (at-least-once delivery)
+**Eventual consistency:** the order badge lags the payment response by ~1–2 s (the worker poll +
+broker round-trip). Accepted by the user; the frontend just re-polls.
 
-**Message broker — RabbitMQ + MassTransit**
-- RabbitMQ as the message broker — exchange/queue routing for domain events
-- MassTransit as the .NET abstraction — handles retries, dead-letter queues, consumer registration
-- NuGet: `MassTransit`, `MassTransit.RabbitMQ`
-- Consumers: `PaymentConfirmedConsumer`, `OrderProcessingConsumer`, `OrderShippedConsumer`, `OrderDeliveredConsumer`, `OrderCancelledConsumer`
-- Each consumer checks `ProcessedOutboxMessage` before executing (idempotency dedup by `OutboxMessage.Id`)
-- RabbitMQ container added to `docker-compose.yml` and K8s manifests
+**`OrderProcessingEvent` is published but has no consumer yet** — it fans out to an unbound exchange
+and is discarded. **Phase 9** binds it to the logistics dispatch consumer.
 
-**Idempotency guarantee:** every downstream side effect runs at-least-once but is safe to repeat — dedup by `OutboxMessage.Id` against `ProcessedOutboxMessage`.
+**Idempotency guarantee:** every downstream side effect runs at-least-once but is safe to repeat —
+dedup by the event `Id` (`= OutboxMessage.Id = EventId`) against `ProcessedOutboxMessage`.
 
-**End-to-end guarantee:** Phase 7 (at-most-once charge) + Phase 8 (at-least-once + idempotent consumers via RabbitMQ/MassTransit) = effectively-once semantics across the payment and order pipeline.
+**End-to-end guarantee:** Phase 7 (at-most-once charge) + Phase 8 (at-least-once + idempotent
+consumers via RabbitMQ/MassTransit) = effectively-once semantics across the payment/order pipeline.
+
+**Deferred to Phase 9:** `ILogisticsClient`/`HttpLogisticsClient`, the `OrderProcessingEvent`
+consumer (+ Shipped/Delivered/Cancelled consumers), and the inbound logistics webhook.
 
 ## Phase 9 — Logistics Integration (pending)
 

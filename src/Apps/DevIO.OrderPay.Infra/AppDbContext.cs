@@ -79,6 +79,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         builder.Entity<Payment.Models.Payment>(entity =>
         {
             entity.HasKey(p => p.Id);
+            entity.Ignore(p => p.DomainEvents); // raised in-memory; persisted via the Outbox
 
             // Amount value object → two flat columns.
             entity.OwnsOne(p => p.Amount, amount =>
@@ -127,7 +128,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasKey(m => m.Id);
             entity.Property(m => m.Type).IsRequired();
             entity.Property(m => m.Content).IsRequired();
-            entity.HasIndex(m => m.ProcessedOn); // the worker polls unprocessed rows
+            // Filtered index: the claim only ever scans unprocessed rows, oldest first.
+            entity.HasIndex(m => new { m.ProcessedOn, m.OccurredOn })
+                  .HasFilter("[ProcessedOn] IS NULL");
         });
 
         builder.Entity<ProcessedOutboxMessage>(entity => entity.HasKey(m => m.Id));

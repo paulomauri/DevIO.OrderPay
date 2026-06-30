@@ -38,6 +38,18 @@ spec:
               value: "http://localhost/realms/orderpay"
             - name: Keycloak__RequireHttpsMetadata
               value: "false"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Username
+              valueFrom:
+                secretKeyRef:
+                  name: orderpay-secrets
+                  key: rabbitmq-user
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: orderpay-secrets
+                  key: rabbitmq-password
           resources:
             requests:
               memory: "256Mi"

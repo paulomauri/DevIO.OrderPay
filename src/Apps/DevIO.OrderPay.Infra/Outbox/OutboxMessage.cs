@@ -10,4 +10,9 @@ public class OutboxMessage
     public DateTime OccurredOn { get; set; }
     public DateTime? ProcessedOn { get; set; } // null = not yet dispatched
     public string? Error { get; set; }
+
+    // Single-claim lease: a worker atomically stamps ClaimedAt/ClaimedBy so only it
+    // publishes the row. A claim older than the lease is reclaimable (crash recovery).
+    public DateTime? ClaimedAt { get; set; }   // null = unclaimed
+    public string? ClaimedBy { get; set; }     // worker instance id (observability)
 }
