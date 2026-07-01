@@ -381,10 +381,11 @@ cd tests/e2e && npm install && npx playwright install chromium && npx playwright
 | Resilience (Polly) tests | 9 |
 | Rate limiting integration tests | 4 |
 | Payment tests (18 unit + 5 integration) | 23 |
-| **Total** | **221** |
+| Phase 8 — order state machine + domain events, outbox interceptor, order event handlers, idempotent consumer dedup | 18 |
+| **Total** | **239** |
 
 Per-category numbers are approximate (`[Theory]` cases expand via `[InlineData]`); the
-executed total is **221/221**.
+executed total is **239/239**.
 
 ### Frontend & E2E (JavaScript)
 

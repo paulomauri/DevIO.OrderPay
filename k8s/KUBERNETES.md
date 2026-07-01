@@ -25,6 +25,9 @@ k8s/
 ├── sqlserver/
 │   ├── deployment.yaml
 │   └── service.yaml
+├── rabbitmq/
+│   ├── deployment.yaml      ← RabbitMQ broker (Outbox → MassTransit) + PVC
+│   └── service.yaml         ← LoadBalancer 5672 (AMQP) / 15672 (management UI)
 ├── webapi/
 │   ├── deployment.yaml
 │   └── service.yaml         ← ClusterIP (nginx handles external access)
@@ -173,31 +176,37 @@ kubectl logs -f job/keycloak-setup -n orderpay
 kubectl apply -f k8s/sqlserver/
 ```
 
-### 4. Deploy Seq
+### 4. Deploy RabbitMQ
+
+```bash
+kubectl apply -f k8s/rabbitmq/
+```
+
+### 5. Deploy Seq
 
 ```bash
 kubectl apply -f k8s/seq/
 ```
 
-### 5. Deploy WebApi
+### 6. Deploy WebApi
 
 ```bash
 kubectl apply -f k8s/webapi/
 ```
 
-### 6. Deploy Frontend
+### 7. Deploy Frontend
 
 ```bash
 kubectl apply -f k8s/frontend/
 ```
 
-### 7. Deploy Nginx (reverse proxy — single entry point)
+### 8. Deploy Nginx (reverse proxy — single entry point)
 
 ```bash
 kubectl apply -f k8s/nginx/
 ```
 
-### 8. Verify everything is running
+### 9. Verify everything is running
 
 ```bash
 kubectl get all -n orderpay

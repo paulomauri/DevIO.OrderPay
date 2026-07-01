@@ -13,13 +13,16 @@ Study project — .NET 10 Clean Architecture API exploring DevIO patterns with o
 ## Architecture — 4 layers
 
 ```
-DevIO.OrderPay.Core                  # Shared abstractions (IRepository, ICustomerRepository, IOrderRepository, IProductRepository)
+DevIO.OrderPay.Core                  # Shared abstractions (IRepository, repositories, IPaymentGateway in Core/Gateway)
+DevIO.OrderPay.SharedKernel          # Dependency-free — IDomainEvent, DomainEvent, AggregateRoot, IDomainEventHandler, Contracts/PaymentCapturedEvent
 DevIO.OrderPay.Customer              # Domain — Customer, Email/Address value objects, DuplicateCpfException
 DevIO.OrderPay.Customer.Application  # Application — CustomerService, validators, DTOs
-DevIO.OrderPay.Order                 # Domain — Order, OrderItem, Product, Price value object, OrderStatus, DuplicateOrderItemException
-DevIO.OrderPay.Order.Application     # Application — OrderService, ProductService, validators, DTOs
-DevIO.OrderPay.Infra                 # Infrastructure — EF Core, AppDbContext, migrations, all repositories
-DevIO.OrderPay.WebApi                # API — controllers, extensions, auth middleware, Program.cs
+DevIO.OrderPay.Order                 # Domain — Order (state machine + events), OrderItem, Product, Price, OrderStatus
+DevIO.OrderPay.Order.Application     # Application — OrderService, ProductService, EventHandlers, validators, DTOs
+DevIO.OrderPay.Payment               # Domain — Payment aggregate (state machine), Amount, PaymentMethod, PaymentAttempt
+DevIO.OrderPay.Payment.Application   # Application — PaymentService (idempotent), validators, DTOs
+DevIO.OrderPay.Infra                 # Infrastructure — EF Core, AppDbContext, migrations, repositories, Outbox
+DevIO.OrderPay.WebApi                # API — controllers, Messaging (consumers), Outbox (worker), extensions, Program.cs
 ```
 
 Bounded contexts live under `src/Contexts/`. Shared infrastructure under `src/Apps/`.
@@ -167,7 +170,7 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 | Phase | Status |
 |---|---|
 | 1 — Authentication | ✅ Done |
-| 2 — Unit Tests (221/221) | ✅ Done |
+| 2 — Unit Tests (239/239) | ✅ Done |
 | K8s deployment | ✅ Done |
 | 3 — Orders Bounded Context | ✅ Done |
 | 4 — Resilience (Polly + Rate Limiting) | ✅ Done |
@@ -362,7 +365,7 @@ New bounded context `DevIO.OrderPay.Payment` (domain + application), with infra 
 
 **Integration / WebApi**
 - `PaymentController` — `POST /api/v1/payment` (idempotent) + `GET /api/v1/payment/{orderId}`.
-- `IPaymentCapturedHandler` is the Payment→Order seam; the WebApi composition root's `OrderPaymentCapturedHandler` advances the order to `PaymentConfirmed`. **Phase 8 replaces this in-process call with the Outbox.**
+- `IPaymentCapturedHandler` was the Phase 7 Payment→Order seam (in-process call advancing the order to `PaymentConfirmed`). **Phase 8 replaced it with the Outbox → RabbitMQ flow and deleted the handler.**
 - `JsonStringEnumConverter` registered so `PaymentType` binds from names (e.g. `"CREDIT"`).
 
 **Persistence notes**

@@ -179,14 +179,14 @@ Test details: [tests/docs/TESTING.md](tests/docs/TESTING.md) (backend) and
 | Phase | Status |
 |---|---|
 | 1 — Authentication (Keycloak JWT) | ✅ Done |
-| 2 — Unit tests (198) | ✅ Done |
+| 2 — Unit tests (239) | ✅ Done |
 | K8s deployment (Minikube) | ✅ Done |
 | 3 — Orders bounded context | ✅ Done |
 | 4 — Resilience (Polly + rate limiting) | ✅ Done |
 | 5 — CI/CD pipeline | ✅ Done |
 | 6 — Frontend (Next.js + Redux) | ✅ Done |
-| 7 — Payment bounded context + idempotency | ⏳ Planned |
-| 8 — Order state machine + domain events + outbox | ⏳ Planned |
+| 7 — Payment bounded context + idempotency | ✅ Done |
+| 8 — Order state machine + domain events + outbox (RabbitMQ/MassTransit) | ✅ Done |
 | 9 — Logistics integration (outbound + inbound webhook) | ⏳ Planned |
 | 10 — Datadog (cloud observability) | ⏳ Planned |
 

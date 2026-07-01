@@ -186,3 +186,19 @@ Added on top of Phase 6 once the Payment backend landed:
   it; server-side locking belongs with the Phase 8 order state machine).
 - Orders table gained a **Discount** column (`order.totalDiscount`); Total stays net.
 - E2E: `tests/e2e/specs/payments.spec.ts` — pay by card → Payment Confirmed badge.
+
+## Phase 8 — Eventual-consistency polish (frontend)
+
+Phase 8 made the order advance **asynchronous** (payment `Captured` → Outbox → RabbitMQ →
+`PaymentConfirmed`, ~1-2 s later), so the badge no longer flips on the immediate `["orders"]`
+invalidate. Handled optimistically:
+
+- **`uiSlice.settlingOrders`** (`Record<orderId, startedAtMs>`) + `markOrderSettling` /
+  `clearOrderSettling`. `PayOrderModal` dispatches `markOrderSettling(orderId)` on `Captured`.
+- **`PaymentProcessingBadge`** (`components/ui/Badge.tsx`) — a pulsing "Payment Processing…" pill
+  (`role="status"`) shown for a settling order while its server status is still in the editable
+  window (`isOrderEditable` — flips `false` exactly at `PaymentConfirmed`).
+- **Orders page** polls `["orders"]` (`refetchInterval` 1.2 s) **only while something is settling**,
+  then falls idle. An effect clears each order once it confirms, times out (30 s fallback for a
+  stalled broker), or disappears. Pay/Edit are disabled while settling.
+- E2E asserts the settling badge appears then resolves (`tests/e2e/specs/payments.spec.ts`).
