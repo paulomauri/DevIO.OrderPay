@@ -1,5 +1,5 @@
 import { renderWithProviders, screen } from "@/test/test-utils";
-import Badge, { OrderStatusBadge } from "./Badge";
+import Badge, { OrderStatusBadge, PaymentProcessingBadge } from "./Badge";
 import type { OrderStatus } from "@/types/order";
 
 describe("Badge", () => {
@@ -33,4 +33,13 @@ describe("OrderStatusBadge", () => {
       expect(badge).toHaveStyleRule("color", color);
     }
   );
+});
+
+describe("PaymentProcessingBadge", () => {
+  it("renders the optimistic settling label", () => {
+    renderWithProviders(<PaymentProcessingBadge />);
+    const badge = screen.getByRole("status", { name: "Payment processing" });
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("Payment Processing");
+  });
 });

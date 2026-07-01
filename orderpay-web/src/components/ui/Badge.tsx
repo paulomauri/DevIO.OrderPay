@@ -1,6 +1,6 @@
 "use client";
 
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import type { OrderStatus } from "@/types/order";
 
 interface BadgeProps {
@@ -52,4 +52,42 @@ const statusLabels: Record<OrderStatus, string> = {
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   return <Badge color={statusColors[status]}>{statusLabels[status]}</Badge>;
+}
+
+// ── Optimistic "settling" badge ─────────────────────────────
+// Shown right after a captured payment, while the order's PaymentConfirmed advance is still
+// in flight on the broker (~1-2 s eventual-consistency lag). The pulsing dot signals "working".
+
+const pulse = keyframes`
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.35; }
+`;
+
+const ProcessingPill = styled.span`
+  display:       inline-flex;
+  align-items:   center;
+  gap:           6px;
+  padding:       2px 10px;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  font-size:     ${({ theme }) => theme.typography.fontSize.xs};
+  font-weight:   ${({ theme }) => theme.typography.fontWeight.medium};
+  background:    #8B5CF61A;
+  color:         #8B5CF6;
+  white-space:   nowrap;
+`;
+
+const Dot = styled.span`
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  background:    currentColor;
+  animation:     ${pulse} 1.1s ease-in-out infinite;
+`;
+
+export function PaymentProcessingBadge() {
+  return (
+    <ProcessingPill role="status" aria-label="Payment processing">
+      <Dot /> Payment Processing…
+    </ProcessingPill>
+  );
 }

@@ -25,7 +25,13 @@ test.describe("payments", () => {
     await dialog.getByLabel(/expiry/i).fill("12/27");
     await dialog.getByRole("button", { name: /^pay \$/i }).click();
 
-    // Capture advances the order; the row badge flips to the friendly label.
-    await expect(row.getByText("Payment Confirmed")).toBeVisible();
+    // Optimistic: on capture the row immediately shows the settling badge while the
+    // PaymentConfirmed advance is still in flight (Outbox → broker, ~1-2 s lag).
+    const settling = row.getByRole("status", { name: /payment processing/i });
+    await expect(settling).toBeVisible();
+
+    // The async advance lands → the settling badge clears and the real status shows.
+    await expect(settling).toBeHidden({ timeout: 15_000 });
+    await expect(row.getByText(/payment confirmed|^processing$/i)).toBeVisible();
   });
 });
