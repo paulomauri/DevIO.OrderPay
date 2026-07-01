@@ -8,10 +8,14 @@ Application layer — services, validators, DTOs. No EF Core, no HTTP.
   state machine (`BeginProcessing → Authorize → Capture`, or `Decline`) → raise `PaymentCapturedEvent`
 - `DTOs/PaymentRequest.cs` + `PaymentResponse.cs`
 - `Validators/PaymentRequestValidator.cs` — FluentValidation; runs automatically before the controller action
-- `Integration/PaymentCapturedEvent.cs` + `IPaymentCapturedHandler.cs` — the seam to the Order
-  context. `PaymentService` calls the handler after a capture; the WebApi composition root provides
-  an implementation that advances the order (keeping the contexts decoupled). Phase 8 swaps this
-  in-process dispatch for the Outbox.
+
+### Payment → Order seam (Phase 8)
+
+`Capture()` raises **`PaymentCapturedEvent`** (in `SharedKernel/Contracts`, so Payment doesn't
+reference Order). `PaymentService` no longer makes any in-process call to the Order context — the
+event is written to the Outbox in the same transaction as the payment save and dispatched to
+RabbitMQ by the `OutboxWorker`; the Order-side consumer advances the order. The Phase 7
+`Integration/PaymentCapturedEvent.cs` + `IPaymentCapturedHandler.cs` seam was **deleted**.
 
 ## Notes
 

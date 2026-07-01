@@ -2,7 +2,9 @@
 
 API entry point — controllers, extensions, auth middleware, Program.cs.
 
-- `Controllers/` — CustomerController, OrderController, ProductController
+- `Controllers/` — CustomerController, OrderController, ProductController, PaymentController
+- `Outbox/OutboxWorker.cs` (Phase 8) — `BackgroundService` that drains the Outbox (single-claim on SQL Server) and publishes each event to RabbitMQ via `IPublishEndpoint`
+- `Messaging/` (Phase 8) — MassTransit consumers (`PaymentCapturedConsumer`, `PaymentConfirmedConsumer`) + `IdempotentConsumer` dedup gate; each delegates to a business handler in `Order.Application/EventHandlers`. MassTransit is registered in `Program.cs` (`Messaging:Transport` = `RabbitMq` | `InMemory`)
 - `Auth/KeycloakRoleClaimTransformer.cs` — maps Keycloak realm roles into ASP.NET Core role claims
 - `Extensions/KeycloakExtensions.cs` — JwtBearer + HostRewritingHandler (Docker/K8s JWKS fix)
 - `Extensions/DatabaseExtensions.cs` — registers DbContext, runs migrations on startup

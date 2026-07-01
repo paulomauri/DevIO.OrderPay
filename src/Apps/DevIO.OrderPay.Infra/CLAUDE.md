@@ -8,6 +8,10 @@ EF Core, DbContext, migrations, repository implementations.
 - `Repositories/OrderRepository.cs` — implements IOrderRepository
 - `Repositories/ProductRepository.cs` — implements IProductRepository
 - `Migrations/` — EF Core migration files
+- `Outbox/` (Phase 8) — transactional Outbox:
+  - `OutboxMessage.cs` (`Id`=event `EventId`, `Type`, `Content`, `ProcessedOn?`, `Error`, + `ClaimedAt`/`ClaimedBy` for single-claim) and `ProcessedOutboxMessage.cs` (consumer dedup ledger)
+  - `ConvertDomainEventsToOutboxInterceptor.cs` — a `SaveChangesInterceptor` that turns each tracked `AggregateRoot`'s domain events into `OutboxMessage` rows **in the same transaction**, then clears them
+  - Drained by the WebApi `OutboxWorker`; see root `CLAUDE.md` → "Phase 8".
 
 ## Migrations
 

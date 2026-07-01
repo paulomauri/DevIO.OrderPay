@@ -1,7 +1,7 @@
 # DevIO.OrderPay — Docker Guide
 
 How the full stack runs under Docker Compose: WebApi, SQL Server, Keycloak (+ Postgres),
-the Next.js frontend, nginx reverse proxy, and Seq.
+RabbitMQ, the Next.js frontend, nginx reverse proxy, and Seq.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ the Next.js frontend, nginx reverse proxy, and Seq.
 
 ## Services
 
-`docker-compose.yml` defines seven services on a single bridge network (`app_network`):
+`docker-compose.yml` defines eight services on a single bridge network (`app_network`):
 
 | Service | Image / build | Role | Ports (host:container) |
 |---|---|---|---|
@@ -24,6 +24,7 @@ the Next.js frontend, nginx reverse proxy, and Seq.
 | `keycloak` | `quay.io/keycloak/keycloak:latest` | Auth server (OIDC/JWT) | `8085:8085` |
 | `keycloak-setup` | `alpine` + `keycloak/setup.sh` | One-shot realm/clients/users bootstrap | — (runs once, exits) |
 | `postgres` | `postgres:16-alpine` | Keycloak database | internal `5432` |
+| `rabbitmq` | `rabbitmq:4-management` | Message broker (Outbox → MassTransit) | `5672:5672`, `15672:15672` |
 | `seq` | `datalust/seq:latest` | Structured logs | `8082:80`, `5341:5341` |
 
 The compose file is the source of truth — read it directly rather than relying on a copy here.
