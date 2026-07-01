@@ -24,8 +24,8 @@ function setRoles(roles: string[]) {
 }
 
 const customers: CustomerResponse[] = [
-  { id: "1", name: "Ada Lovelace", email: "ada@example.com", mobile: "+55 11 90000-0001" },
-  { id: "2", name: "Alan Turing",  email: "alan@example.com", mobile: "+55 11 90000-0002" },
+  { id: "1", name: "Ada Lovelace", email: "ada@example.com", cpf: "11111111111", mobile: "+55 11 90000-0001" },
+  { id: "2", name: "Alan Turing",  email: "alan@example.com", cpf: "22222222222", mobile: "+55 11 90000-0002" },
 ];
 
 describe("CustomersPage", () => {

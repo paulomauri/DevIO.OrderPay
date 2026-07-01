@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { closeModal, selectActiveModal, selectModalPayload } from "@/store/uiSlice";
+import { closeModal, markOrderSettling, selectActiveModal, selectModalPayload } from "@/store/uiSlice";
 import Modal, { ModalBody, ModalFooter } from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -65,7 +65,10 @@ export default function PayOrderModal() {
       }),
     onSuccess: (payment) => {
       if (payment.status === "Captured") {
-        toast.success("Payment captured.");
+        toast.success("Payment captured. Confirming order…");
+        // The order advances to PaymentConfirmed asynchronously (Outbox → broker, ~1-2 s).
+        // Mark it settling so the table shows "Payment Processing…" and polls until it lands.
+        dispatch(markOrderSettling(orderId!));
         queryClient.invalidateQueries({ queryKey: ["orders"] });
         queryClient.invalidateQueries({ queryKey: ["order", orderId] });
         onClose();
