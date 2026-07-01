@@ -30,6 +30,10 @@
     <File Path="k8s/sqlserver/deployment.yaml" />
     <File Path="k8s/sqlserver/service.yaml" />
   </Folder>
+  <Folder Name="/k8s/rabbitmq/">
+    <File Path="k8s/rabbitmq/deployment.yaml" />
+    <File Path="k8s/rabbitmq/service.yaml" />
+  </Folder>
   <Folder Name="/k8s/webapi/">
     <File Path="k8s/webapi/deployment.yaml" />
     <File Path="k8s/webapi/service.yaml" />
@@ -92,6 +96,13 @@
     <File Path="orderpay-web/src/components/ui/ErrorBoundary.tsx" />
     <File Path="orderpay-web/src/components/ui/TableSkeleton.tsx" />
     <File Path="orderpay-web/src/components/ui/EmptyState.tsx" />
+    <File Path="orderpay-web/src/app/(auth)/login/page.tsx" />
+    <File Path="orderpay-web/src/app/api/auth/[...nextauth]/route.ts" />
+    <File Path="orderpay-web/src/services/payments.ts" />
+    <File Path="orderpay-web/src/types/payment.ts" />
+    <File Path="orderpay-web/src/features/orders/EditOrderModal.tsx" />
+    <File Path="orderpay-web/src/features/payments/PayOrderModal.tsx" />
+    <File Path="orderpay-web/src/test/test-utils.tsx" />
   </Folder>
   <Folder Name="/keycloak/">
     <File Path="keycloak/realm-export.json" />
@@ -106,17 +117,22 @@
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
     <File Path=".env" />
+    <File Path="README.md" />
     <File Path="CLAUDE.md" />
     <File Path="DEVOPS_COMMANDS.md" />
     <File Path="DOCKER.md" />
     <File Path="KUBERNETES.md" />
+    <File Path="docker-compose.yml" />
+    <File Path="docker-compose.e2e.yml" />
+    <File Path="Dockerfile" />
     <File Path="entrypoint.sh" />
-    <File Path="env.example" />
+    <File Path=".env.example" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Apps/">
     <File Path="src/Apps/DevIO.OrderPay.Core/CLAUDE.md" />
     <File Path="src/Apps/DevIO.OrderPay.Infra/CLAUDE.md" />
+    <File Path="src/Apps/DevIO.OrderPay.SharedKernel/CLAUDE.md" />
     <File Path="src/Apps/DevIO.OrderPay.WebApi/CLAUDE.md" />
     <Project Path="src/Apps/DevIO.OrderPay.Core/DevIO.OrderPay.Core.csproj" Id="84e071c9-85c8-43b9-bd54-2d41e1ddb0ae" />
     <Project Path="src/Apps/DevIO.OrderPay.Infra/DevIO.OrderPay.Infra.csproj" Id="d138f548-6135-4f58-ad96-5cef6b833761" />
@@ -147,6 +163,18 @@
   </Folder>
   <Folder Name="/tests/docs/">
     <File Path="tests/docs/TESTING.md" />
+  </Folder>
+  <Folder Name="/tests/e2e/">
+    <File Path="tests/e2e/README.md" />
+    <File Path="tests/e2e/playwright.config.ts" />
+    <File Path="tests/e2e/package.json" />
+    <File Path="tests/e2e/specs/helpers.ts" />
+    <File Path="tests/e2e/specs/auth.setup.ts" />
+    <File Path="tests/e2e/specs/auth.spec.ts" />
+    <File Path="tests/e2e/specs/customers.spec.ts" />
+    <File Path="tests/e2e/specs/products.spec.ts" />
+    <File Path="tests/e2e/specs/orders.spec.ts" />
+    <File Path="tests/e2e/specs/payments.spec.ts" />
   </Folder>
   <ItemGroup>
     <Watch Remove="**/bin/**" />
