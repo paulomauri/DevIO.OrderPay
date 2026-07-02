@@ -590,16 +590,37 @@ kubectl rollout restart deployment/orderpay-webapi -n orderpay
 
 ### Access SQL Server from outside cluster
 
+The `sqlserver` service is **ClusterIP** (no external IP), so it's only reachable
+inside the cluster. To connect from the host (SSMS / Azure Data Studio / sqlcmd)
+you **must** port-forward — `minikube tunnel` does not expose ClusterIP services.
+
 ```bash
 # terminal 1 — port-forward (keep open)
 kubectl port-forward svc/sqlserver 1433:1433 -n orderpay
 
-# terminal 2 — connect via sqlcmd
+# …or run it detached in the background
+kubectl port-forward svc/sqlserver 1433:1433 -n orderpay &
+
+# verify the port is open on the host
+Test-NetConnection -ComputerName 127.0.0.1 -Port 1433   # PowerShell
+nc -vz 127.0.0.1 1433                                    # WSL / Linux
+
+# terminal 2 — connect via sqlcmd (Docker, no local install needed)
 docker run --rm -it mcr.microsoft.com/mssql-tools \
     /opt/mssql-tools/bin/sqlcmd \
     -S 127.0.0.1,1433 -U SA -P 'Mauri@22' \
     -Q 'SELECT name FROM sys.databases'
 ```
+
+**Connection details**
+
+| Field | Value |
+|---|---|
+| Server | `127.0.0.1,1433` |
+| Auth | SQL Login |
+| User / Password | `sa` / `Mauri@22` |
+| Database | `OrderPayDb` |
+| Trust server certificate | Yes |
 
 ### VS Code mssql connection
 
@@ -637,6 +658,7 @@ kubectl apply -f k8s/secrets.yaml
 kubectl apply -f k8s/postgres/
 kubectl apply -f k8s/keycloak/
 kubectl apply -f k8s/sqlserver/
+kubectl apply -f k8s/rabbitmq/
 kubectl apply -f k8s/seq/
 kubectl apply -f k8s/webapi/
 kubectl apply -f k8s/frontend/

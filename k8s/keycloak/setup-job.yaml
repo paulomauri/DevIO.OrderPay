@@ -128,6 +128,43 @@ data:
       echo "Audience mapper added."
     fi
 
+    WEB_SECRET="${KEYCLOAK_WEB_CLIENT_SECRET:-change-me-keycloak-orderpay-web-client-secret}"
+    CLIENT_EXISTS=$(curl -s --connect-timeout 10 --max-time 30 \
+      -H "$AUTH" "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=orderpay-web")
+    if echo "$CLIENT_EXISTS" | jq -e 'length > 0' > /dev/null; then
+      echo "Client 'orderpay-web' already exists."
+    else
+      RESULT=$(curl -s --connect-timeout 10 --max-time 30 \
+        -o /tmp/web-response.txt -w "%{http_code}" -X POST \
+        -H "$AUTH" -H "$CT" \
+        -d "{\"clientId\":\"orderpay-web\",\"name\":\"OrderPay Web Frontend\",\"enabled\":true,\"publicClient\":false,\"bearerOnly\":false,\"standardFlowEnabled\":true,\"directAccessGrantsEnabled\":false,\"protocol\":\"openid-connect\",\"secret\":\"${WEB_SECRET}\",\"redirectUris\":[\"http://127.0.0.1/api/auth/callback/keycloak\",\"http://127.0.0.1/*\"],\"webOrigins\":[\"http://127.0.0.1\"]}" \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/clients")
+      if [ "$RESULT" = "201" ]; then
+        echo "Client 'orderpay-web' created."
+      else
+        echo "Failed to create client 'orderpay-web' — HTTP ${RESULT}"
+        cat /tmp/web-response.txt
+        exit 1
+      fi
+    fi
+
+    WEB_UUID=$(curl -s --connect-timeout 10 --max-time 30 \
+      -H "$AUTH" "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=orderpay-web" \
+      | jq -r '.[0].id')
+
+    MAPPER_EXISTS=$(curl -s --connect-timeout 10 --max-time 30 \
+      -H "$AUTH" "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${WEB_UUID}/protocol-mappers/models" \
+      | jq '[.[] | select(.name == "orderpay-webapi-audience")] | length')
+
+    if [ "$MAPPER_EXISTS" -gt 0 ]; then
+      echo "Web audience mapper already exists."
+    else
+      curl -sf -X POST -H "$AUTH" -H "$CT" \
+        -d '{"name":"orderpay-webapi-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","consentRequired":false,"config":{"included.client.audience":"orderpay-webapi","id.token.claim":"false","access.token.claim":"true"}}' \
+        "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${WEB_UUID}/protocol-mappers/models"
+      echo "Web audience mapper added."
+    fi
+
     create_user() {
       EMAIL=$1; PASSWORD=$2; FIRSTNAME=$3; LASTNAME=$4; ROLES=$5
       RESULT=$(curl -s --connect-timeout 10 --max-time 30 \
@@ -187,6 +224,11 @@ spec:
                 secretKeyRef:
                   name: orderpay-secrets
                   key: keycloak-admin-password
+            - name: KEYCLOAK_WEB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orderpay-secrets
+                  key: keycloak-client-secret
           volumeMounts:
             - name: setup-script
               mountPath: /scripts
