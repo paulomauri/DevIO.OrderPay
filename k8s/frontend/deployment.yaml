@@ -14,6 +14,24 @@ spec:
         app: orderpay-web
     spec:
       containers:
+        # OIDC split-horizon fix: Keycloak's discovery doc advertises its
+        # endpoints as http://localhost:8085 (KC_HOSTNAME=localhost, reachable
+        # by the browser via the tunnel). NextAuth's server-side token/jwks
+        # calls run inside this pod, where localhost:8085 is the pod itself.
+        # This sidecar forwards the pod's localhost:8085 to the Keycloak service
+        # so the discovered endpoints resolve without changing the issuer.
+        - name: keycloak-localhost-proxy
+          image: alpine/socat:latest
+          args:
+            - "TCP6-LISTEN:8085,fork,reuseaddr,ipv6only=0"
+            - "TCP:keycloak.orderpay.svc.cluster.local:8085"
+          resources:
+            requests:
+              memory: "16Mi"
+              cpu: "10m"
+            limits:
+              memory: "32Mi"
+              cpu: "50m"
         - name: orderpay-web
           image: paulomauri/orderpay-web:latest
           ports:
