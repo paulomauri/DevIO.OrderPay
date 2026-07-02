@@ -651,28 +651,54 @@ minikube start --driver=docker --memory=4096 --cpus=4
 minikube addons enable ingress
 minikube addons enable metrics-server
 
-# 3. apply manifests (in dependency order)
+# 3. namespace + secrets
 kubectl apply -f k8s/namespace.yaml
 kubectl config set-context --current --namespace=orderpay
 kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/postgres/
+
+# 4. data + infra dependencies FIRST (webapi/keycloak depend on these)
+kubectl apply -f k8s/postgres/      # Keycloak's database
+kubectl apply -f k8s/sqlserver/     # WebApi's database
+kubectl apply -f k8s/rabbitmq/      # WebApi's broker — MUST be up before webapi or it crash-loops
+kubectl apply -f k8s/seq/           # logging sink
+kubectl rollout status deploy/postgres deploy/sqlserver deploy/rabbitmq -n orderpay
+
+# 5. Keycloak (needs postgres). The k8s/keycloak/ folder ALSO applies
+#    setup-job.yaml (ConfigMap + Job) — it waits for Keycloak health, then
+#    provisions the realm, roles, clients (orderpay-webapi / -swagger / -web)
+#    and the seed users. No separate apply needed.
 kubectl apply -f k8s/keycloak/
-kubectl apply -f k8s/sqlserver/
-kubectl apply -f k8s/rabbitmq/
-kubectl apply -f k8s/seq/
+kubectl rollout status deploy/keycloak -n orderpay
+kubectl wait --for=condition=complete job/keycloak-setup -n orderpay --timeout=180s
+
+# 6. app tier (needs sqlserver + rabbitmq + keycloak all healthy)
 kubectl apply -f k8s/webapi/
+kubectl rollout status deploy/orderpay-webapi -n orderpay
 kubectl apply -f k8s/frontend/
 kubectl apply -f k8s/nginx/
 
-# 4. watch pods start
+# 7. watch pods settle
 kubectl get pods -n orderpay -w
 
-# 5. expose services (terminal 1 — keep open)
+# 8. expose services (terminal 1 — keep open)
 minikube tunnel
 
-# 6. check external IPs (terminal 2)
+# 9. check external IPs (terminal 2)
 kubectl get svc -n orderpay
 ```
+
+> **Keycloak setup Job** — `k8s/keycloak/setup-job.yaml` is bundled in the
+> `k8s/keycloak/` folder, so step 5 applies it automatically. The Job has
+> `ttlSecondsAfterFinished: 300`, so it self-deletes ~5 min after completing
+> (a later `kubectl get jobs` showing "No resources found" is normal — it ran
+> and was cleaned up). To force a re-run (e.g. after editing `setup.sh`):
+>
+> ```bash
+> kubectl delete job keycloak-setup -n orderpay --ignore-not-found
+> kubectl apply -f k8s/keycloak/setup-job.yaml
+> kubectl wait --for=condition=complete job/keycloak-setup -n orderpay --timeout=180s
+> kubectl logs job/keycloak-setup -n orderpay        # verify clients + users created
+> ```
 
 ### Daily Development Workflow
 

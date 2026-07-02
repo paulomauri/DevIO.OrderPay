@@ -126,24 +126,36 @@ docker push paulomauri/orderpay-web:latest
 
 ### Kubernetes (Minikube)
 ```bash
-# first deploy (in order)
+# first deploy (dependency order — wait between tiers so nothing crash-loops)
 kubectl apply -f k8s/namespace.yaml
 kubectl config set-context --current --namespace=orderpay
 kubectl apply -f k8s/secrets.yaml
+
+# data + infra deps first (rabbitmq MUST precede webapi or it crash-loops)
 kubectl apply -f k8s/postgres/
-kubectl apply -f k8s/keycloak/
 kubectl apply -f k8s/sqlserver/
 kubectl apply -f k8s/rabbitmq/
 kubectl apply -f k8s/seq/
+kubectl rollout status deploy/postgres deploy/sqlserver deploy/rabbitmq -n orderpay
+
+# Keycloak — the k8s/keycloak/ folder also applies setup-job.yaml (ConfigMap +
+# Job), which provisions the realm, roles, clients (orderpay-webapi/-swagger/-web)
+# and seed users. Job self-deletes 5 min after completing (ttlSecondsAfterFinished).
+kubectl apply -f k8s/keycloak/
+kubectl rollout status deploy/keycloak -n orderpay
+kubectl wait --for=condition=complete job/keycloak-setup -n orderpay --timeout=180s
+
+# app tier (needs sqlserver + rabbitmq + keycloak healthy)
 kubectl apply -f k8s/webapi/
+kubectl rollout status deploy/orderpay-webapi -n orderpay
 kubectl apply -f k8s/frontend/
 kubectl apply -f k8s/nginx/
 
 # expose services
 minikube tunnel                        # terminal 1 — keep open
 
-# re-run Keycloak setup Job
-kubectl delete job keycloak-setup -n orderpay
+# re-run Keycloak setup Job (after editing setup.sh)
+kubectl delete job keycloak-setup -n orderpay --ignore-not-found
 kubectl apply -f k8s/keycloak/setup-job.yaml
 
 # get JWT token
