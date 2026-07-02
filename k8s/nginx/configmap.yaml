@@ -12,9 +12,20 @@ data:
         # Kubernetes cluster DNS — defers upstream resolution to request time
         resolver 10.96.0.10 valid=10s ipv6=off;
 
+        # ── Health probe — answered locally, no backend/DNS dependency ─
+        location = /health {
+            access_log off;
+            return 200 "ok\n";
+        }
+
+        # ── Swagger bare path → canonical trailing-slash URL ───────────
+        location = /swagger {
+            return 301 /swagger/;
+        }
+
         # ── Keycloak → Auth server ───────────────────────────────────
         location /realms/ {
-            set $upstream           http://keycloak:8085;
+            set $upstream           http://keycloak.orderpay.svc.cluster.local:8085;
             proxy_pass              $upstream;
             proxy_http_version      1.1;
             proxy_redirect          off;
@@ -28,7 +39,7 @@ data:
         }
 
         location /admin/ {
-            set $upstream           http://keycloak:8085;
+            set $upstream           http://keycloak.orderpay.svc.cluster.local:8085;
             proxy_pass              $upstream;
             proxy_http_version      1.1;
             proxy_redirect          off;
@@ -42,7 +53,7 @@ data:
         }
 
         location /resources/ {
-            set $upstream      http://keycloak:8085;
+            set $upstream      http://keycloak.orderpay.svc.cluster.local:8085;
             proxy_pass         $upstream;
             proxy_http_version 1.1;
             proxy_redirect     off;
@@ -53,7 +64,7 @@ data:
         }
 
         location /js/ {
-            set $upstream      http://keycloak:8085;
+            set $upstream      http://keycloak.orderpay.svc.cluster.local:8085;
             proxy_pass         $upstream;
             proxy_http_version 1.1;
             proxy_redirect     off;
@@ -64,7 +75,7 @@ data:
         }
 
         location /kc/ {
-            set $upstream      http://keycloak:8085;
+            set $upstream      http://keycloak.orderpay.svc.cluster.local:8085;
             proxy_pass         $upstream;
             proxy_http_version 1.1;
             proxy_redirect     off;
@@ -74,9 +85,20 @@ data:
             proxy_set_header   X-Forwarded-Proto $scheme;
         }
 
+        # ── NextAuth → Frontend (must precede /api/) ─────────────────
+        location /api/auth/ {
+            set $upstream      http://orderpay-web.orderpay.svc.cluster.local:3000;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+        }
+
         # ── API → WebApi ────────────────────────────────────────────
         location /api/ {
-            set $upstream      http://orderpay-webapi:8080;
+            set $upstream      http://orderpay-webapi.orderpay.svc.cluster.local:80;
             proxy_pass         $upstream;
             proxy_http_version 1.1;
             proxy_set_header   Host              $host;
@@ -87,7 +109,7 @@ data:
 
         # ── Swagger → WebApi ────────────────────────────────────────
         location /swagger/ {
-            set $upstream      http://orderpay-webapi:8080;
+            set $upstream      http://orderpay-webapi.orderpay.svc.cluster.local:80;
             proxy_pass         $upstream;
             proxy_http_version 1.1;
             proxy_set_header   Host              $host;
@@ -98,7 +120,7 @@ data:
 
         # ── Frontend → Next.js ──────────────────────────────────────
         location / {
-            set $upstream      http://orderpay-web:3000;
+            set $upstream      http://orderpay-web.orderpay.svc.cluster.local:3000;
             proxy_pass         $upstream;
             proxy_http_version 1.1;
             proxy_set_header   Host              $host;
