@@ -651,6 +651,17 @@ minikube start --driver=docker --memory=4096 --cpus=4
 minikube addons enable ingress
 minikube addons enable metrics-server
 
+# 2b. cache images into the node BEFORE applying (see "Reliable image caching"
+#     below). On a flaky link this avoids ImagePullBackOff during rollout —
+#     especially the ~1.14 GB frontend image.
+minikube image load paulomauri/orderpay-webapi:latest
+minikube image load paulomauri/orderpay-web:latest
+for img in postgres:16-alpine mcr.microsoft.com/mssql/server:2022-latest \
+           rabbitmq:4-management datalust/seq:latest \
+           quay.io/keycloak/keycloak:latest nginx:alpine alpine:latest; do
+  minikube image pull "$img"
+done
+
 # 3. namespace + secrets
 kubectl apply -f k8s/namespace.yaml
 kubectl config set-context --current --namespace=orderpay
@@ -806,6 +817,45 @@ curl https://hub.docker.com/v2/repositories/<user>/<image>/tags \
 # force re-pull
 kubectl rollout restart deployment/orderpay-webapi -n orderpay
 ```
+
+### Reliable image caching (flaky Docker Hub / WSL2)
+
+On a slow or flaky link, kubelet pulls abort mid-download (`ErrImagePull`,
+`Failed to pull ... context canceled`) — worst on large images like the
+~1.14 GB frontend. Cache images into the minikube node up front so the rollout
+never touches Docker Hub:
+
+```bash
+# your own app images — load straight from local Docker (no Docker Hub pull)
+minikube image load paulomauri/orderpay-webapi:latest
+minikube image load paulomauri/orderpay-web:latest
+
+# third-party images — pull once into the node
+for img in postgres:16-alpine mcr.microsoft.com/mssql/server:2022-latest \
+           rabbitmq:4-management datalust/seq:latest \
+           quay.io/keycloak/keycloak:latest nginx:alpine alpine:latest; do
+  minikube image pull "$img"
+done
+
+# verify what's cached
+minikube image ls | grep -E 'orderpay|rabbitmq|seq|keycloak|sqlserver|postgres|nginx'
+```
+
+**Gotcha — `:latest` tags default to `imagePullPolicy: Always`**, so kubelet
+still does a network digest-check on start and can fail even with the image
+cached. If a pod stays in `ImagePullBackOff` after caching, force it to use the
+cached copy (live patch, no manifest change):
+
+```bash
+for d in orderpay-webapi orderpay-web seq; do
+  kubectl patch deploy $d -n orderpay --type=json \
+    -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"IfNotPresent"}]'
+done
+kubectl delete pod -n orderpay -l 'app in (orderpay-webapi,orderpay-web,seq)'   # recreate on cached image
+```
+
+> After pushing a **new** `:latest`, re-run `minikube image load` (and restart
+> the deployment) — with `IfNotPresent` the node won't re-pull on its own.
 
 ### Pod in CrashLoopBackOff
 
