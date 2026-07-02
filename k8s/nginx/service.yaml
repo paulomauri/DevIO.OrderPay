@@ -6,6 +6,9 @@ metadata:
 spec:
   selector:
     app: nginx
+  # Pinned so the frontend pod's hostAliases (id.localhost -> nginx) is stable.
+  # clusterIP is immutable: on an existing cluster, delete the svc before apply.
+  clusterIP: 10.96.0.100
   ports:
     - port: 80
       targetPort: 80

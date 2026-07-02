@@ -28,14 +28,18 @@ spec:
                 secretKeyRef:
                   name: orderpay-secrets
                   key: connection-string
+            # Authority/ValidIssuer = public issuer (token iss); MetadataAddress
+            # = internal URL for discovery. HostRewritingHandler swaps the public
+            # host (id.localhost) -> internal host (keycloak:8085) on the JWKS
+            # backchannel, so validation matches the token's port-free issuer.
             - name: Keycloak__Authority
-              value: "http://localhost/realms/orderpay"
+              value: "http://id.localhost/realms/orderpay"
             - name: Keycloak__Audience
               value: "orderpay-webapi"
             - name: Keycloak__MetadataAddress
               value: "http://keycloak:8085/realms/orderpay/.well-known/openid-configuration"
             - name: Keycloak__ValidIssuer
-              value: "http://localhost/realms/orderpay"
+              value: "http://id.localhost/realms/orderpay"
             - name: Keycloak__RequireHttpsMetadata
               value: "false"
             - name: RabbitMq__Host

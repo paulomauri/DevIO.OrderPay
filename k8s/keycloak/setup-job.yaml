@@ -95,12 +95,15 @@ data:
     CLIENT_EXISTS=$(curl -s --connect-timeout 10 --max-time 30 \
       -H "$AUTH" "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=orderpay-swagger")
     if echo "$CLIENT_EXISTS" | jq -e 'length > 0' > /dev/null; then
-      echo "Client 'orderpay-swagger' already exists."
+      SW_UUID=$(echo "$CLIENT_EXISTS" | jq -r '.[0].id')
+      echo "$CLIENT_EXISTS" | jq '.[0] | .redirectUris=["http://localhost:8080/*","http://localhost:5208/*","http://127.0.0.1/*","http://www.localhost/*","http://api.localhost/*"] | .webOrigins=["http://localhost:8080","http://localhost:5208","http://127.0.0.1","http://www.localhost","http://api.localhost"]' > /tmp/swagger-update.json
+      curl -sf -X PUT -H "$AUTH" -H "$CT" -d @/tmp/swagger-update.json "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${SW_UUID}"
+      echo "Client 'orderpay-swagger' reconciled (redirect URIs updated)."
     else
       RESULT=$(curl -s --connect-timeout 10 --max-time 30 \
         -o /tmp/swagger-response.txt -w "%{http_code}" -X POST \
         -H "$AUTH" -H "$CT" \
-        -d '{"clientId":"orderpay-swagger","name":"OrderPay Swagger UI","enabled":true,"publicClient":true,"bearerOnly":false,"standardFlowEnabled":true,"directAccessGrantsEnabled":true,"protocol":"openid-connect","redirectUris":["http://localhost:8080/*","http://localhost:5208/*","http://127.0.0.1/*"],"webOrigins":["http://localhost:8080","http://localhost:5208","http://127.0.0.1"]}' \
+        -d '{"clientId":"orderpay-swagger","name":"OrderPay Swagger UI","enabled":true,"publicClient":true,"bearerOnly":false,"standardFlowEnabled":true,"directAccessGrantsEnabled":true,"protocol":"openid-connect","redirectUris":["http://localhost:8080/*","http://localhost:5208/*","http://127.0.0.1/*","http://www.localhost/*","http://api.localhost/*"],"webOrigins":["http://localhost:8080","http://localhost:5208","http://127.0.0.1","http://www.localhost","http://api.localhost"]}' \
         "${KEYCLOAK_URL}/admin/realms/${REALM}/clients")
       if [ "$RESULT" = "201" ]; then
         echo "Client 'orderpay-swagger' created."
@@ -132,12 +135,15 @@ data:
     CLIENT_EXISTS=$(curl -s --connect-timeout 10 --max-time 30 \
       -H "$AUTH" "${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=orderpay-web")
     if echo "$CLIENT_EXISTS" | jq -e 'length > 0' > /dev/null; then
-      echo "Client 'orderpay-web' already exists."
+      WEB_UUID0=$(echo "$CLIENT_EXISTS" | jq -r '.[0].id')
+      echo "$CLIENT_EXISTS" | jq --arg secret "$WEB_SECRET" '.[0] | .redirectUris=["http://www.localhost/api/auth/callback/keycloak","http://www.localhost/*"] | .webOrigins=["http://www.localhost"] | .secret=$secret' > /tmp/web-update.json
+      curl -sf -X PUT -H "$AUTH" -H "$CT" -d @/tmp/web-update.json "${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${WEB_UUID0}"
+      echo "Client 'orderpay-web' reconciled (redirect URIs + secret updated)."
     else
       RESULT=$(curl -s --connect-timeout 10 --max-time 30 \
         -o /tmp/web-response.txt -w "%{http_code}" -X POST \
         -H "$AUTH" -H "$CT" \
-        -d "{\"clientId\":\"orderpay-web\",\"name\":\"OrderPay Web Frontend\",\"enabled\":true,\"publicClient\":false,\"bearerOnly\":false,\"standardFlowEnabled\":true,\"directAccessGrantsEnabled\":false,\"protocol\":\"openid-connect\",\"secret\":\"${WEB_SECRET}\",\"redirectUris\":[\"http://127.0.0.1/api/auth/callback/keycloak\",\"http://127.0.0.1/*\"],\"webOrigins\":[\"http://127.0.0.1\"]}" \
+        -d "{\"clientId\":\"orderpay-web\",\"name\":\"OrderPay Web Frontend\",\"enabled\":true,\"publicClient\":false,\"bearerOnly\":false,\"standardFlowEnabled\":true,\"directAccessGrantsEnabled\":false,\"protocol\":\"openid-connect\",\"secret\":\"${WEB_SECRET}\",\"redirectUris\":[\"http://www.localhost/api/auth/callback/keycloak\",\"http://www.localhost/*\"],\"webOrigins\":[\"http://www.localhost\"]}" \
         "${KEYCLOAK_URL}/admin/realms/${REALM}/clients")
       if [ "$RESULT" = "201" ]; then
         echo "Client 'orderpay-web' created."

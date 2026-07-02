@@ -5,87 +5,21 @@ metadata:
   namespace: orderpay
 data:
   default.conf: |
+    # Kubernetes cluster DNS — defers upstream resolution to request time.
+    # Declared once here (http context via conf.d include) for all vhosts.
+    resolver 10.96.0.10 valid=10s ipv6=off;
+
+    # ── www.localhost — frontend + same-origin API/Swagger (default vhost) ──
     server {
-        listen 80;
-        server_name _;
+        listen 80 default_server;
+        server_name www.localhost localhost 127.0.0.1 _;
 
-        # Kubernetes cluster DNS — defers upstream resolution to request time
-        resolver 10.96.0.10 valid=10s ipv6=off;
-
-        # ── Health probe — answered locally, no backend/DNS dependency ─
         location = /health {
             access_log off;
             return 200 "ok\n";
         }
 
-        # ── Swagger bare path → canonical trailing-slash URL ───────────
-        location = /swagger {
-            return 301 /swagger/;
-        }
-
-        # ── Keycloak → Auth server ───────────────────────────────────
-        location /realms/ {
-            set $upstream           http://keycloak.orderpay.svc.cluster.local:8085;
-            proxy_pass              $upstream;
-            proxy_http_version      1.1;
-            proxy_redirect          off;
-            proxy_set_header        Host              $host;
-            proxy_set_header        X-Real-IP         $remote_addr;
-            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $scheme;
-            proxy_buffer_size       128k;
-            proxy_buffers           4 256k;
-            proxy_busy_buffers_size 256k;
-        }
-
-        location /admin/ {
-            set $upstream           http://keycloak.orderpay.svc.cluster.local:8085;
-            proxy_pass              $upstream;
-            proxy_http_version      1.1;
-            proxy_redirect          off;
-            proxy_set_header        Host              $host;
-            proxy_set_header        X-Real-IP         $remote_addr;
-            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $scheme;
-            proxy_buffer_size       128k;
-            proxy_buffers           4 256k;
-            proxy_busy_buffers_size 256k;
-        }
-
-        location /resources/ {
-            set $upstream      http://keycloak.orderpay.svc.cluster.local:8085;
-            proxy_pass         $upstream;
-            proxy_http_version 1.1;
-            proxy_redirect     off;
-            proxy_set_header   Host              $host;
-            proxy_set_header   X-Real-IP         $remote_addr;
-            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header   X-Forwarded-Proto $scheme;
-        }
-
-        location /js/ {
-            set $upstream      http://keycloak.orderpay.svc.cluster.local:8085;
-            proxy_pass         $upstream;
-            proxy_http_version 1.1;
-            proxy_redirect     off;
-            proxy_set_header   Host              $host;
-            proxy_set_header   X-Real-IP         $remote_addr;
-            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header   X-Forwarded-Proto $scheme;
-        }
-
-        location /kc/ {
-            set $upstream      http://keycloak.orderpay.svc.cluster.local:8085;
-            proxy_pass         $upstream;
-            proxy_http_version 1.1;
-            proxy_redirect     off;
-            proxy_set_header   Host              $host;
-            proxy_set_header   X-Real-IP         $remote_addr;
-            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header   X-Forwarded-Proto $scheme;
-        }
-
-        # ── NextAuth → Frontend (must precede /api/) ─────────────────
+        # NextAuth routes live on the Next.js app — must precede /api/
         location /api/auth/ {
             set $upstream      http://orderpay-web.orderpay.svc.cluster.local:3000;
             proxy_pass         $upstream;
@@ -96,7 +30,6 @@ data:
             proxy_set_header   X-Forwarded-Proto $scheme;
         }
 
-        # ── API → WebApi ────────────────────────────────────────────
         location /api/ {
             set $upstream      http://orderpay-webapi.orderpay.svc.cluster.local:80;
             proxy_pass         $upstream;
@@ -107,7 +40,7 @@ data:
             proxy_set_header   X-Forwarded-Proto $scheme;
         }
 
-        # ── Swagger → WebApi ────────────────────────────────────────
+        location = /swagger { return 301 /swagger/; }
         location /swagger/ {
             set $upstream      http://orderpay-webapi.orderpay.svc.cluster.local:80;
             proxy_pass         $upstream;
@@ -118,7 +51,6 @@ data:
             proxy_set_header   X-Forwarded-Proto $scheme;
         }
 
-        # ── Frontend → Next.js ──────────────────────────────────────
         location / {
             set $upstream      http://orderpay-web.orderpay.svc.cluster.local:3000;
             proxy_pass         $upstream;
@@ -129,5 +61,55 @@ data:
             proxy_set_header   X-Forwarded-Proto $scheme;
             proxy_set_header   Upgrade           $http_upgrade;
             proxy_set_header   Connection        "upgrade";
+        }
+    }
+
+    # ── id.localhost — Keycloak (auth server + admin console) ──────────────
+    server {
+        listen 80;
+        server_name id.localhost;
+
+        location = /health {
+            access_log off;
+            return 200 "ok\n";
+        }
+
+        location / {
+            set $upstream           http://keycloak.orderpay.svc.cluster.local:8085;
+            proxy_pass              $upstream;
+            proxy_http_version      1.1;
+            proxy_redirect          off;
+            proxy_set_header        Host              $host;
+            proxy_set_header        X-Real-IP         $remote_addr;
+            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_set_header        X-Forwarded-Host  $host;
+            proxy_set_header        X-Forwarded-Port  80;
+            proxy_buffer_size       128k;
+            proxy_buffers           4 256k;
+            proxy_busy_buffers_size 256k;
+        }
+    }
+
+    # ── api.localhost — WebApi (Swagger by default) ────────────────────────
+    server {
+        listen 80;
+        server_name api.localhost;
+
+        location = /health {
+            access_log off;
+            return 200 "ok\n";
+        }
+
+        location = / { return 301 /swagger/; }
+
+        location / {
+            set $upstream      http://orderpay-webapi.orderpay.svc.cluster.local:80;
+            proxy_pass         $upstream;
+            proxy_http_version 1.1;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
         }
     }

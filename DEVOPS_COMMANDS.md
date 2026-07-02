@@ -750,11 +750,21 @@ minikube stop
 
 | Service | URL | Notes |
 |---|---|---|
-| WebApi Swagger | `http://127.0.0.1/swagger` | minikube tunnel required |
-| WebApi Health | `http://127.0.0.1/health` | minikube tunnel required |
-| WebApi Customers | `http://127.0.0.1/api/v1/customers` | minikube tunnel required |
+| Frontend | `http://www.localhost` | minikube tunnel required |
+| WebApi Swagger | `http://api.localhost/swagger` | minikube tunnel required |
+| WebApi Health | `http://api.localhost/health` | minikube tunnel required |
+| WebApi (via frontend origin) | `http://www.localhost/api/v1/Customer` | same-origin API for the SPA |
+| Keycloak Admin | `http://id.localhost/admin` | minikube tunnel required |
+| Keycloak (direct) | `http://localhost:8085/admin` | keycloak LoadBalancer |
 | Seq Dashboard | `http://127.0.0.1:8082` | minikube tunnel required |
 | SQL Server | `127.0.0.1,1433` | kubectl port-forward required |
+
+> **`*.localhost` resolves to `127.0.0.1` automatically** in Chrome/Firefox
+> (RFC 6761) — no hosts-file edits needed. `minikube tunnel` binds the nginx
+> LoadBalancer to `127.0.0.1:80`, and nginx routes by `Host` (www / api /
+> id.localhost). `id.localhost` is the single OIDC issuer used by **both** the
+> browser (via the tunnel) and the frontend pod (via `hostAliases` → nginx),
+> so NextAuth's server-side token exchange and the browser share one issuer.
 
 ---
 
