@@ -143,7 +143,18 @@ builder.Services.AddSingleton<IPaymentGateway, MockPaymentGateway>();
 // consumers (WebApi.Messaging) dedup by event Id and delegate to these business handlers.
 builder.Services.AddScoped<IDomainEventHandler<PaymentCapturedEvent>, ConfirmOrderOnPaymentCaptured>();
 builder.Services.AddScoped<IDomainEventHandler<PaymentConfirmedEvent>, StartProcessingOnOrderConfirmed>();
+// Phase 9 outbound: OrderProcessingEvent → notify the logistics carrier.
+builder.Services.AddScoped<IDomainEventHandler<OrderProcessingEvent>, DispatchOrderOnProcessing>();
 builder.Services.AddHostedService<OutboxWorker>();
+
+// Logistics carrier port → HTTP adapter (typed client). BaseAddress ends with '/' so the
+// adapter's relative "orders" path resolves to {Logistics:BaseUrl}/orders.
+builder.Services.AddHttpClient<ILogisticsClient, HttpLogisticsClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Logistics:BaseUrl"]!);
+    string? apiKey = builder.Configuration["Logistics:ApiKey"];
+    if (!string.IsNullOrEmpty(apiKey)) client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+});
 
 // Transport is RabbitMq by default; integration tests set Messaging:Transport=InMemory so the
 // bus needs no broker. ConfigureEndpoints wires a receive endpoint per registered consumer.
@@ -151,6 +162,7 @@ builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<PaymentCapturedConsumer>();
     x.AddConsumer<PaymentConfirmedConsumer>();
+    x.AddConsumer<OrderProcessingConsumer>();
 
     if (string.Equals(builder.Configuration["Messaging:Transport"], "InMemory", StringComparison.OrdinalIgnoreCase))
     {

@@ -11,4 +11,9 @@ public class CustomerRepository(AppDbContext context)
 
     public async Task<Customer.Models.Customer?> GetByCpfAsync(string cpf) =>
         await DbSet.AsNoTracking().FirstOrDefaultAsync(c => c.CPF == cpf);
+
+    public async Task<Customer.Models.Customer?> GetByIdWithAddressAsync(Guid id) =>
+        await DbSet.AsNoTracking()
+            .Include(c => c.Enderecos)
+            .FirstOrDefaultAsync(c => c.Id == id);
 }

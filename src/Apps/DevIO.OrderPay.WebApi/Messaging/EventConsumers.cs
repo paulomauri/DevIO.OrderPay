@@ -24,3 +24,12 @@ public class PaymentConfirmedConsumer(AppDbContext db, IDomainEventHandler<Payme
     public Task Consume(ConsumeContext<PaymentConfirmedEvent> context) =>
         IdempotentConsumer.HandleOnce(db, handler, context.Message, context.CancellationToken);
 }
+
+// Phase 9: OrderProcessingEvent was published to an unbound exchange in Phase 8 — this binds it,
+// delegating to DispatchOrderOnProcessing which notifies the logistics carrier.
+public class OrderProcessingConsumer(AppDbContext db, IDomainEventHandler<OrderProcessingEvent> handler)
+    : IConsumer<OrderProcessingEvent>
+{
+    public Task Consume(ConsumeContext<OrderProcessingEvent> context) =>
+        IdempotentConsumer.HandleOnce(db, handler, context.Message, context.CancellationToken);
+}
