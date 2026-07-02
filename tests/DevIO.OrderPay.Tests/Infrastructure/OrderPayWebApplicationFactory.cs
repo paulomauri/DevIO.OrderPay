@@ -1,11 +1,13 @@
 using DevIO.OrderPay.Infra;
 using DevIO.OrderPay.WebApi.Extensions;
+using DevIO.OrderPay.WebApi.Outbox;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace DevIO.OrderPay.Tests.Infrastructure;
 
@@ -19,6 +21,14 @@ public class OrderPayWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             services.PostConfigure<RateLimiterSettings>(o => o.Enabled = false);
+
+            // No integration test asserts async Outbox draining, and each test spins up its
+            // own host via WithWebHostBuilder — leaving the 1s-poll BackgroundService running
+            // makes those hosts race a disposed bus/DbContext on teardown (intermittent
+            // NullReferenceException at class cleanup). Drop it in tests.
+            var outboxWorker = services.SingleOrDefault(
+                d => d.ImplementationType == typeof(OutboxWorker));
+            if (outboxWorker is not null) services.Remove(outboxWorker);
             // Remove DbContextOptions<AppDbContext>
             var optionsDesc = services.SingleOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
