@@ -13,32 +13,21 @@ spec:
       labels:
         app: orderpay-web
     spec:
+      # Single shared issuer for browser + server: id.localhost resolves to
+      # nginx (-> keycloak) inside the pod, and to 127.0.0.1 (-> nginx -> keycloak)
+      # in the browser via *.localhost. Replaces the old socat sidecar.
+      hostAliases:
+        - ip: "10.96.0.100"          # nginx Service (pinned clusterIP)
+          hostnames:
+            - "id.localhost"
       containers:
-        # OIDC split-horizon fix: Keycloak's discovery doc advertises its
-        # endpoints as http://localhost:8085 (KC_HOSTNAME=localhost, reachable
-        # by the browser via the tunnel). NextAuth's server-side token/jwks
-        # calls run inside this pod, where localhost:8085 is the pod itself.
-        # This sidecar forwards the pod's localhost:8085 to the Keycloak service
-        # so the discovered endpoints resolve without changing the issuer.
-        - name: keycloak-localhost-proxy
-          image: alpine/socat:latest
-          args:
-            - "TCP6-LISTEN:8085,fork,reuseaddr,ipv6only=0"
-            - "TCP:keycloak.orderpay.svc.cluster.local:8085"
-          resources:
-            requests:
-              memory: "16Mi"
-              cpu: "10m"
-            limits:
-              memory: "32Mi"
-              cpu: "50m"
         - name: orderpay-web
           image: paulomauri/orderpay-web:latest
           ports:
             - containerPort: 3000
           env:
             - name: NEXTAUTH_URL
-              value: "http://127.0.0.1"
+              value: "http://www.localhost"
             - name: NEXTAUTH_SECRET
               valueFrom:
                 secretKeyRef:
@@ -51,12 +40,11 @@ spec:
                 secretKeyRef:
                   name: orderpay-secrets
                   key: keycloak-client-secret
-            # Server-side OIDC discovery uses the internal K8s service name.
-            # KC_HOSTNAME=localhost means tokens have iss=http://localhost/realms/orderpay.
-            # NextAuth validates iss against the issuer field in the discovery doc,
-            # not against this env var, so the internal URL here is safe.
+            # Same issuer the browser uses. Server-side discovery/token/jwks hit
+            # id.localhost -> (hostAliases) nginx -> keycloak; the token's iss
+            # (http://id.localhost/realms/orderpay) then matches on validation.
             - name: KEYCLOAK_ISSUER
-              value: "http://keycloak:8085/realms/orderpay"
+              value: "http://id.localhost/realms/orderpay"
             - name: NEXT_PUBLIC_API_URL
               value: ""
           resources:

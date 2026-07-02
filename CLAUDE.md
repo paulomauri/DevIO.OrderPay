@@ -170,10 +170,10 @@ curl -s -X POST http://localhost:8085/realms/orderpay/protocol/openid-connect/to
 
 | Service | Docker Compose | Kubernetes |
 |---|---|---|
-| Frontend | `http://www.localhost` | `http://127.0.0.1` |
-| Swagger | `http://api.localhost/swagger` | `http://127.0.0.1/swagger` |
-| Keycloak Admin | `http://id.localhost/admin` | `http://localhost:8085/admin` |
-| Keycloak (direct) | `http://localhost:8085/admin` | — |
+| Frontend | `http://www.localhost` | `http://www.localhost` |
+| Swagger | `http://api.localhost/swagger` | `http://api.localhost/swagger` (or `http://www.localhost/swagger`) |
+| Keycloak Admin | `http://id.localhost/admin` | `http://id.localhost/admin` |
+| Keycloak (direct) | `http://localhost:8085/admin` | `http://localhost:8085/admin` |
 | RabbitMQ (management) | `http://localhost:15672` | `http://127.0.0.1:15672` |
 | Seq | `http://seq.localhost:8082` | `http://127.0.0.1:8082` |
 
